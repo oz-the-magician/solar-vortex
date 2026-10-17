@@ -64,14 +64,43 @@ body.journey .jhint{opacity:1}
 .level{position:fixed;z-index:4;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 120px);font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-2);pointer-events:none;transition:opacity .4s}
 .scalebar{position:fixed;z-index:4;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 130px);display:flex;flex-direction:column;align-items:center;gap:4px;font-family:var(--mono);font-size:11px;color:var(--text-2);pointer-events:none;font-variant-numeric:tabular-nums}
 .scalebar i{display:block;height:6px;border:1px solid var(--text-2);border-top:0}
-@media (max-width:760px){.info{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 140px);max-height:45vh;overflow:auto}.level{top:calc(env(safe-area-inset-top,0px) + 70px)}.scalebar{bottom:calc(env(safe-area-inset-bottom,0px) + 190px)}.note{display:none}.brand p{display:none}.ctrl input[type=range]{width:100px}}
+.bar,.more,.lvls{display:contents}
+.note .lead{display:none}
+.mobonly,.scrim{display:none}
+@media (max-width:760px),(pointer:coarse) and (max-width:1024px){
+ .mobonly{display:inline-flex}
+ .btn{min-height:44px;padding:0 14px;font-size:14px;align-items:center;display:inline-flex;justify-content:center}
+ .hud{gap:8px;top:calc(env(safe-area-inset-top,0px) + 10px);left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));flex-wrap:nowrap}
+ .brand{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 14px;max-width:none;flex:0 0 auto}
+ .brand h1{font-size:14px;letter-spacing:.06em}.brand p{display:none}
+ .about-b{width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--text-2);font-family:var(--display);font-weight:700;cursor:pointer;align-items:center;justify-content:center;flex:0 0 auto}
+ .readout{grid-template-columns:auto auto;gap:0 8px;padding:6px 10px;font-size:11px;flex:1 1 auto;min-width:0}
+ .readout span:nth-of-type(3),.readout b:nth-of-type(3){display:none}
+ .level{top:calc(env(safe-area-inset-top,0px) + 74px);font-size:11px}
+ .ctrl{left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));width:auto;max-width:none;padding:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 10px)}
+ .bar{display:flex;gap:8px;width:100%}.bar .go{flex:1 1 auto}.btn.icon{width:44px;padding:0;font-size:18px}
+ .more{display:flex;flex-wrap:wrap;gap:8px;position:fixed;left:0;right:0;bottom:0;z-index:9;padding:10px max(16px,env(safe-area-inset-left,0px)) calc(env(safe-area-inset-bottom,0px) + 16px) max(16px,env(safe-area-inset-right,0px));background:rgb(10 14 28 / .96);border-top:1px solid var(--line);border-radius:18px 18px 0 0;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);max-height:70vh;overflow:auto;transform:translateY(105%);transition:transform .32s var(--out)}
+ body.sheet .more{transform:none}
+ .grab{width:40px;height:4px;border-radius:2px;background:var(--line-2,rgb(120 160 255 / .32));margin:2px auto 6px;flex:0 0 100%;max-width:40px}
+ .lvls{display:flex;gap:8px;overflow-x:auto;flex:0 0 100%;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}.lvls::-webkit-scrollbar{display:none}.lvls .btn{flex:0 0 auto}
+ .more label{flex:0 0 100%;justify-content:space-between;font-size:13px;min-height:40px}.more input[type=range]{flex:1 1 auto;width:auto;margin-left:12px}
+ .scrim{position:fixed;inset:0;z-index:8;background:rgb(0 0 0 / .35);opacity:0;pointer-events:none;transition:opacity .3s;display:block}
+ body.sheet .scrim,body.about .scrim{opacity:1;pointer-events:auto}
+ .info{left:0;right:0;top:auto;bottom:0;width:auto;max-height:46vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px max(16px,env(safe-area-inset-left,0px)) calc(env(safe-area-inset-bottom,0px) + 18px);transform:translateY(16px);z-index:10}
+ .note{display:block;position:fixed;left:0;right:0;bottom:0;top:auto;max-width:none;z-index:10;text-align:left;font-size:13.5px;line-height:1.5;color:var(--text-2);background:rgb(10 14 28 / .96);border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding:20px max(16px,env(safe-area-inset-left,0px)) calc(env(safe-area-inset-bottom,0px) + 20px);max-height:60vh;overflow:auto;transform:translateY(105%);transition:transform .32s var(--out)}
+ body.about .note{transform:none}
+ .note .lead{display:block;color:var(--text);margin:0 0 10px}
+ .scalebar{bottom:calc(env(safe-area-inset-bottom,0px) + 82px)}
+ .bigt{top:26%}
+ .jhint{bottom:calc(env(safe-area-inset-bottom,0px) + 20px);right:auto;left:50%;transform:translateX(-50%)}
+}
 </style>
 
 </head>
 <body>
 <canvas id="cv" aria-label="Солнце и планеты движутся сквозь космос, оставляя спиральные следы"></canvas>
 <div class="hud">
-  <div class="brand glass"><h1>Солнечный вихрь</h1><p>Солнце летит вокруг центра Галактики примерно на 230 км/с. Планеты обращаются вокруг него, и их путь в пространстве складывается в спирали. Плоскость орбит наклонена к направлению полёта примерно на 60°.</p></div>
+  <div class="brand glass"><h1>Солнечный вихрь</h1><button class="about-b mobonly" id="aboutB" aria-label="О проекте" aria-expanded="false">i</button><p>Солнце летит вокруг центра Галактики примерно на 230 км/с. Планеты обращаются вокруг него, и их путь в пространстве складывается в спирали. Плоскость орбит наклонена к направлению полёта примерно на 60°.</p></div>
   <div class="readout glass" aria-live="off">
     <span>Время</span><b id="yr">0 лет</b>
     <span>Солнце прошло</span><b id="dist">0 а.е.</b>
@@ -79,28 +108,37 @@ body.journey .jhint{opacity:1}
     <span>Кадров/с</span><b id="fps">–</b>
   </div>
 </div>
-<div class="bigt" id="bigt"></div><div class="jhint">Esc или клик — прервать</div><div id="flash"></div>
-<div class="ctrl glass">
-  <button class="btn go" id="journey">▶ Путешествие</button>
-  <label for="spd">Скорость <input id="spd" type="range" min="0" max="100" value="38"><span id="spdv"></span></label>
-  <button class="btn" id="scale" aria-pressed="true">Реальные расстояния</button>
-  <button class="btn" id="move" aria-pressed="true">Полёт по Галактике</button>
-  <button class="btn" id="trails" aria-pressed="true">Спирали</button>
-  <button class="btn" id="rings" aria-pressed="true">Орбиты</button>
-  <button class="btn" id="names" aria-pressed="true">Названия</button>
-  <button class="btn" id="view">Вид сбоку</button>
-  <button class="btn" id="reset">Сбросить</button>
-  <button class="btn" data-fly="sys">Система</button>
-  <button class="btn" data-fly="nb">Соседи</button>
-  <button class="btn" data-fly="gal">Галактика</button>
-  <button class="btn" data-fly="lg">Местная группа</button>
-  <button class="btn" data-fly="lan">Ланиакея</button>
-  <button class="btn" data-fly="uni">Вселенная</button>
-  <button class="btn" id="flows" aria-pressed="true">Потоки</button>
-  <button class="btn" id="glow" aria-pressed="true">Свечение</button>
-  <button class="btn" id="snd" aria-pressed="false">Звук</button>
-  <label for="vol">Громкость <input id="vol" type="range" min="0" max="100" value="60"></label>
+<div class="bigt" id="bigt"></div><div class="jhint">Тап или Esc — прервать</div><div id="flash"></div>
+<div class="ctrl glass" id="ctrl">
+  <div class="bar">
+    <button class="btn go" id="journey">▶ Путешествие</button>
+    <button class="btn" id="snd" aria-pressed="false">Звук</button>
+    <button class="btn icon mobonly" id="menu" aria-expanded="false" aria-controls="more" aria-label="Настройки и уровни">☰</button>
+  </div>
+  <div class="more" id="more">
+    <div class="grab mobonly" aria-hidden="true"></div>
+    <div class="lvls">
+      <button class="btn" data-fly="sys">Система</button>
+      <button class="btn" data-fly="nb">Соседи</button>
+      <button class="btn" data-fly="gal">Галактика</button>
+      <button class="btn" data-fly="lg">Местная группа</button>
+      <button class="btn" data-fly="lan">Ланиакея</button>
+      <button class="btn" data-fly="uni">Вселенная</button>
+    </div>
+    <label for="spd">Скорость <input id="spd" type="range" min="0" max="100" value="38"><span id="spdv"></span></label>
+    <button class="btn" id="scale" aria-pressed="true">Реальные расстояния</button>
+    <button class="btn" id="move" aria-pressed="true">Полёт по Галактике</button>
+    <button class="btn" id="trails" aria-pressed="true">Спирали</button>
+    <button class="btn" id="rings" aria-pressed="true">Орбиты</button>
+    <button class="btn" id="names" aria-pressed="true">Названия</button>
+    <button class="btn" id="flows" aria-pressed="true">Потоки</button>
+    <button class="btn" id="glow" aria-pressed="true">Свечение</button>
+    <button class="btn" id="view">Вид сбоку</button>
+    <button class="btn" id="reset">Сбросить</button>
+    <label for="vol">Громкость <input id="vol" type="range" min="0" max="100" value="60"></label>
+  </div>
 </div>
+<div class="scrim" id="scrim"></div>
 <aside class="info glass" id="info" aria-live="polite"><button class="x" id="infoX" aria-label="Закрыть">✕</button><div class="kind" id="iKind"></div><h2 id="iName"></h2><dl id="iFacts"></dl><p id="iText"></p></aside>
 <div class="level" id="level">Солнечная система</div>
 <div class="scalebar" aria-hidden="true"><i id="sbar"></i><span id="slab"></span></div>
@@ -193,7 +231,7 @@ function drawPlanet(p,q){const [x,y,z,s]=q;if(z<30)return;const r=p.s*Math.min(2
  glowOrb(x,y,r*5,p.c,.55);
  ctx.globalCompositeOperation="source-over";const g=ctx.createRadialGradient(x-r*.35,y-r*.35,r*.1,x,y,r);g.addColorStop(0,"#ffffff");g.addColorStop(.25,p.c);g.addColorStop(1,hexA(p.c,.35));ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
  if(p.ring){ctx.strokeStyle=hexA("#EAD49A",.7);ctx.lineWidth=Math.max(1,r*.18);ctx.beginPath();ctx.ellipse(x,y,r*2.1,r*.6,-.35,0,Math.PI*2);ctx.stroke()}
- if(namesOn()){ctx.font="500 13px 'IBM Plex Sans', system-ui, sans-serif";ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillStyle="rgba(230,236,255,.78)";ctx.fillText(p.n,x+r+7,y-7);ctx.font="400 11.5px 'IBM Plex Mono', ui-monospace, monospace";ctx.fillStyle="rgba(154,166,200,.8)";ctx.fillText(p.a.toLocaleString("ru-RU")+" а.е.",x+r+7,y+9)}}
+ label(p.n,x+r+7,y,.9,p.a.toLocaleString("ru-RU")+" а.е.");ctx.globalCompositeOperation="source-over"}
 function drawFlightArrow(){if(!moving)return;const S=sunPos(simT);const a=proj(S[0]-2600,S[1],S[2]),b=proj(S[0]+1200,S[1],S[2]);if(a[2]<30||b[2]<30)return;
  ctx.globalCompositeOperation="lighter";const g=ctx.createLinearGradient(a[0],a[1],b[0],b[1]);g.addColorStop(0,"rgba(255,194,102,0)");g.addColorStop(.68,"rgba(255,194,102,.35)");g.addColorStop(1,"rgba(255,194,102,0)");ctx.strokeStyle=g;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke()}
 
@@ -220,7 +258,7 @@ function drawCosmos(S){ctx.globalCompositeOperation="lighter";
   NEAR.forEach(st=>{const q=proj(S[0]+st.p[0],S[1]+st.p[1],S[2]+st.p[2]);if(q[2]<40)return;
    ctx.strokeStyle=`rgba(154,166,200,${.18*A})`;ctx.setLineDash([2,5]);ctx.beginPath();ctx.moveTo(o[0],o[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();ctx.setLineDash([]);
    ctx.globalAlpha=A;glowOrb(q[0],q[1],11,st.c,.9);ctx.globalAlpha=1;if(A>.4)PICK.push({x:q[0],y:q[1],r:14,id:st.n});
-   if(LV.L<9.6&&namesOn()){ctx.globalCompositeOperation="source-over";ctx.fillStyle=`rgba(230,236,255,${.85*A})`;ctx.fillText(st.n,q[0]+10,q[1]-7);ctx.fillStyle=`rgba(154,166,200,${.85*A})`;ctx.font="400 11.5px 'IBM Plex Mono', ui-monospace, monospace";ctx.fillText(st.d.toLocaleString("ru-RU")+" св. г.",q[0]+10,q[1]+9);ctx.font="500 13px 'IBM Plex Sans', system-ui, sans-serif";ctx.globalCompositeOperation="lighter"}})}
+   if(LV.L<9.6)label(st.n,q[0]+10,q[1],A,st.d.toLocaleString("ru-RU")+" св. г.")})}
  if(LV.gal>.01){const A=LV.gal;
   const c=proj(...GC);if(c[2]>40){const R=7000*LYPX*c[3];const g=ctx.createRadialGradient(c[0],c[1],0,c[0],c[1],R);g.addColorStop(0,`rgba(255,220,170,${.45*A})`);g.addColorStop(.4,`rgba(255,180,120,${.12*A})`);g.addColorStop(1,"rgba(255,160,100,0)");ctx.fillStyle=g;ctx.fillRect(c[0]-R,c[1]-R,R*2,R*2)}
   if(LV.pts>.01){const hz=A*LV.pts;if(glowOn&&hz>.02){galBlob(GC,MWB,3.2e4*LYPX,"#7F8FD8",.32*hz,.22);galBlob(GC,MWB,1.1e4*LYPX,"#FFD9A8",.2*hz,.3)}}
@@ -291,13 +329,13 @@ function galBlob(c,b,R,col,a,core){const cx=proj(...c);if(cx[2]<40)return null;c
  ctx.save();ctx.transform(ux,uy,vx,vy,cx[0],cx[1]);const g=ctx.createRadialGradient(0,0,0,0,0,1);g.addColorStop(0,hexA("#FFF4E0",a));g.addColorStop(core,hexA(col,a*.55));g.addColorStop(1,hexA(col,0));ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,1,0,Math.PI*2);ctx.fill();ctx.restore();return [cx[0],cx[1],Math.max(Math.hypot(ux,uy),Math.hypot(vx,vy))]}
 let LBL=[];function label(txt,x,y,a,sub){if(!namesOn())return;ctx.font="500 13px 'IBM Plex Sans', system-ui, sans-serif";const w=Math.max(ctx.measureText(txt).width,sub?sub.length*7:0),h=sub?30:16,R=[x-2,y-h/2-2,w+4,h+4];if(LBL.some(o=>R[0]<o[0]+o[2]&&o[0]<R[0]+R[2]&&R[1]<o[1]+o[3]&&o[1]<R[1]+R[3]))return;LBL.push(R);ctx.globalCompositeOperation="source-over";ctx.textAlign="left";ctx.textBaseline="middle";ctx.font="500 13px 'IBM Plex Sans', system-ui, sans-serif";ctx.fillStyle=`rgba(230,236,255,${.85*a})`;ctx.fillText(txt,x,y-(sub?7:0));if(sub){ctx.font="400 11.5px 'IBM Plex Mono', ui-monospace, monospace";ctx.fillStyle=`rgba(154,166,200,${.85*a})`;ctx.fillText(sub,x,y+9)}ctx.globalCompositeOperation="lighter"}
 const fmtLy=ly=>ly>=1e6?(ly/1e6).toLocaleString("ru-RU",{maximumFractionDigits:ly>=1e7?0:1})+" млн св. лет":Math.round(ly/1000).toLocaleString("ru-RU")+" тыс. св. лет";
-function drawDeep(S){ctx.globalCompositeOperation="lighter";LBL=[];if(LV.L>5.2){const o=proj(...S);LBL.push([o[0]-16,o[1]-16,o[0]>0?300:0,32])}
+function drawDeep(S){ctx.globalCompositeOperation="lighter";if(LV.L>5.2){const o=proj(...S);LBL.push([o[0]-16,o[1]-16,o[0]>0?300:0,32])}
  if(LV.mw>.01){const r=galBlob(GC,MWB,5e4*LYPX,"#BFD0FF",.85*LV.mw,.25);if(r&&LV.lgLab>.05&&LV.L>12.6)label("Млечный Путь",r[0]+r[2]+8,r[1]+16,LV.mw*LV.lgLab)}
  if(LV.lg>.01){LG.forEach(g=>{const r=galBlob(g.p,g.b,g.d/2,g.c,.9*LV.lg,.3);if(!r)return;const a=LV.lg*LV.lgLab;if(a>.4)PICK.push({x:r[0],y:r[1],r:Math.max(12,r[2]),id:g.n});
   if(a>.05)label(g.n,r[0]+Math.max(8,r[2])+4,r[1],a,fmtLy(Math.hypot(...g.p)/LYPX))})}
  if(LV.lan>.01){const A=LV.lan*(1-.55*LV.nbr),gc=proj(...GA),dimP=showFlow?.3:1;if(showFlow)drawFlows(A,performance.now()/1000);
   if(gc[2]>40){const R=260*M*LYPX*gc[3];const g=ctx.createRadialGradient(gc[0],gc[1],0,gc[0],gc[1],R);g.addColorStop(0,`rgba(255,190,120,${(showFlow?.16:.10)*A})`);g.addColorStop(.6,showFlow?`rgba(200,140,60,${.06*A})`:`rgba(180,140,255,${.04*A})`);g.addColorStop(1,"rgba(150,120,255,0)");ctx.fillStyle=g;ctx.fillRect(gc[0]-R,gc[1]-R,R*2,R*2)}
-  for(let i=0;i<LAN.length;i++){const p=LAN[i],q=proj(p[0],p[1],p[2]);if(q[2]<40||q[0]<-4||q[0]>W+4||q[1]<-4||q[1]>H+4)continue;ctx.fillStyle=`rgba(${p[3]},${A*dimP*p[4]*.38})`;ctx.fillRect(q[0]-.6,q[1]-.6,1.2,1.2)}
+  for(let i=0;i<LAN.length;i+=MOB?2:1){const p=LAN[i],q=proj(p[0],p[1],p[2]);if(q[2]<40||q[0]<-4||q[0]>W+4||q[1]<-4||q[1]>H+4)continue;ctx.fillStyle=`rgba(${p[3]},${A*dimP*p[4]*.38})`;ctx.fillRect(q[0]-.6,q[1]-.6,1.2,1.2)}
   for(const k in CL){const q=proj(...CL[k]);if(q[2]<40)continue;ctx.globalAlpha=A;glowOrb(q[0],q[1],k==="Великий аттрактор"?20:12,k==="Скопление Волос Вероники"?"#C8B8FF":"#FFD9A8",.55);ctx.globalAlpha=1;if(A>.4)PICK.push({x:q[0],y:q[1],r:16,id:k});if(A>.3&&LV.L<15.8)label(k,q[0]+14,q[1],A,fmtLy(Math.hypot(...CL[k])/LYPX))}}}
 
 /* ===== observable universe: procedural cosmic web inside a CMB shell (radius 46.5 Gly) ===== */
@@ -345,7 +383,7 @@ function drawWebBasins(S,A){ctx.globalCompositeOperation="lighter";ctx.lineCap="
 function drawUniverse(S){ctx.globalCompositeOperation="lighter";
  if(LV.nbr>.01&&showFlow)drawNeighbours(LV.nbr,performance.now()/1000);
  if(LV.web>.01&&showFlow)drawWebBasins(S,LV.web*(1-.4*LV.cmb));
- if(LV.web>.01){const A=LV.web*(1-.35*LV.cmb);for(let i=0;i<WEB.length;i++){const p=WEB[i],q=proj(S[0]+p[0],S[1]+p[1],S[2]+p[2]);if(q[2]<40||q[0]<-4||q[0]>W+4||q[1]<-4||q[1]>H+4)continue;ctx.fillStyle=`rgba(${p[3]},${A*p[4]*.5})`;ctx.fillRect(q[0]-.65,q[1]-.65,1.3,1.3)}}
+ if(LV.web>.01){const A=LV.web*(1-.35*LV.cmb);for(let i=0;i<WEB.length;i+=MOB?2:1){const p=WEB[i],q=proj(S[0]+p[0],S[1]+p[1],S[2]+p[2]);if(q[2]<40||q[0]<-4||q[0]>W+4||q[1]<-4||q[1]>H+4)continue;ctx.fillStyle=`rgba(${p[3]},${A*p[4]*.5})`;ctx.fillRect(q[0]-.65,q[1]-.65,1.3,1.3)}}
  if(LV.cmb>.01){const A=LV.cmb,c=proj(...S),R=RU*c[3];
   for(let i=0;i<CMB.length;i++){const p=CMB[i],q=proj(S[0]+p[0],S[1]+p[1],S[2]+p[2]);if(q[2]<40)continue;const back=q[2]>c[2];ctx.fillStyle=`rgba(${p[3]},${A*(back?.22:.5)})`;ctx.fillRect(q[0]-1.1,q[1]-1.1,2.2,2.2)}
   if(c[2]>40){const g=ctx.createRadialGradient(c[0],c[1],R*.9,c[0],c[1],R*1.08);g.addColorStop(0,"rgba(255,170,90,0)");g.addColorStop(.55,`rgba(255,170,90,${.22*A})`);g.addColorStop(1,"rgba(255,140,70,0)");ctx.fillStyle=g;ctx.beginPath();ctx.arc(c[0],c[1],R*1.08,0,Math.PI*2);ctx.fill();
@@ -357,7 +395,7 @@ function drawUniverse(S){ctx.globalCompositeOperation="lighter";
 const RA=document.createElement("canvas"),rax=RA.getContext("2d"),RB2=document.createElement("canvas"),rbx=RB2.getContext("2d");
 function sunRays(k,t){if(!glowOn||k<.02||!SUNSCR)return;const q=4,w=Math.max(1,Math.round(W/q)),h=Math.max(1,Math.round(H/q));[RA,RB2].forEach(c=>{if(c.width!==w||c.height!==h){c.width=w;c.height=h}});
  const sx=SUNSCR.x/q,sy=SUNSCR.y/q,sr=Math.max(SUNSCR.R,14)/q;
- if(rayFrame++%(+$("#fps").textContent<40?2:1)===0){
+ if(perfLow)return;if(rayFrame++%(MOB||+$("#fps").textContent<40?2:1)===0){
   rax.globalCompositeOperation="source-over";rax.globalAlpha=1;rax.fillStyle="#000";rax.fillRect(0,0,w,h);
   rax.globalCompositeOperation="lighter";const g=rax.createRadialGradient(sx,sy,0,sx,sy,sr*2.2);g.addColorStop(0,"rgba(255,225,170,1)");g.addColorStop(.45,"rgba(255,170,80,.55)");g.addColorStop(1,"rgba(255,120,40,0)");rax.fillStyle=g;rax.fillRect(sx-sr*2.2,sy-sr*2.2,sr*4.4,sr*4.4);
   rax.drawImage(pcv,sx-sr*1.15,sy-sr*1.15,sr*2.3,sr*2.3);
@@ -377,7 +415,7 @@ function galaxyVolume(A){if(!glowOn||A<.02)return;
  ctx.globalCompositeOperation="lighter"}
 /* bloom: blur a quarter-size copy of the frame and add it back */
 let glowOn=true;const BC=document.createElement("canvas"),bctx=BC.getContext("2d");
-function bloom(k){if(!glowOn||k<.02)return;const bw=Math.max(1,Math.round(W/4)),bh=Math.max(1,Math.round(H/4));if(BC.width!==bw||BC.height!==bh){BC.width=bw;BC.height=bh}
+function bloom(k){k*=MOB?.5:1;if(perfLow)k*=.5;if(!glowOn||k<.02)return;const bw=Math.max(1,Math.round(W/4)),bh=Math.max(1,Math.round(H/4));if(BC.width!==bw||BC.height!==bh){BC.width=bw;BC.height=bh}
  bctx.globalCompositeOperation="copy";bctx.filter="contrast(2.4) brightness(1.1) blur(3px)";bctx.drawImage(cv,0,0,cv.width,cv.height,0,0,bw,bh);bctx.filter="none";
  ctx.globalCompositeOperation="lighter";ctx.globalAlpha=k*.7;ctx.drawImage(BC,0,0,W,H);ctx.globalAlpha=k*.35;ctx.drawImage(BC,-W*.02,-H*.02,W*1.04,H*1.04);ctx.globalAlpha=1}
 function niceScale(){const world=130*cam.dist/FOC,au=world/60;let v,u,k;
@@ -385,12 +423,13 @@ function niceScale(){const world=130*cam.dist/FOC,au=world/60;let v,u,k;
  const e=Math.pow(10,Math.floor(Math.log10(v))),m=v/e,n=m>=5?5:m>=2?2:1,val=n*e;$("#sbar").style.width=(130*val/v).toFixed(1)+"px";
  $("#slab").textContent=(val<1?val.toLocaleString("ru-RU",{maximumFractionDigits:3}):val.toLocaleString("ru-RU"))+" "+u}
 function levelName(){const L=LV.L;return L<4.9?"Солнечная система":L<6.2?"Межзвёздное пространство":L<9.4?"Ближайшие звёзды":L<10.4?"Окрестности Солнца":L<12.4?"Млечный Путь":L<14.4?"Местная группа":L<15.75?"Ланиакея":L<16.5?"Соседи Ланиакеи":L<17.15?"Космическая паутина":"Наблюдаемая Вселенная"}
+const MOB=matchMedia("(max-width:760px),(pointer:coarse) and (max-width:1024px)").matches;let perfLow=false,lowSince=0;
 function resize(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+"px";cv.style.height=H+"px";FOC=Math.min(W,H)*.95}
 const spd=$("#spd");const yps=()=>{const v=+spd.value;return v===0?0:.02*Math.pow(10,v/33)};/* years per second, ~0.02 … 20 */
 function fmtSpd(){const y=yps();$("#spdv").textContent=y===0?"пауза":y<1?`${(y*12).toFixed(1)} мес/с`:`${y.toFixed(1)} лет/с`}
 let t0=performance.now(),lastT=t0,lastUser=0;
 let PSCR=[],SUNSCR=null,rayFrame=0,PICK=[],hoverId=null,selId=null,fpsN=0,fpsT=0;
-function frame(now){PICK=[];PSCR=[];SUNSCR=null;fpsN++;if(now-fpsT>500){$("#fps").textContent=Math.round(fpsN*1000/(now-fpsT));fpsN=0;fpsT=now}const t=(now-t0)/1000,dt=Math.min(.05,(now-lastT)/1000);lastT=now;
+function frame(now){LBL=[];PICK=[];PSCR=[];SUNSCR=null;fpsN++;if(now-fpsT>500){const f=Math.round(fpsN*1000/(now-fpsT));$("#fps").textContent=f;fpsN=0;fpsT=now;if(f<30&&!J){if(!lowSince)lowSince=now;else if(now-lowSince>3000)perfLow=true}else lowSince=0}const t=(now-t0)/1000,dt=Math.min(.05,(now-lastT)/1000);lastT=now;
  if(!reduce||true)simT+=dt*yps()*(reduce?.35:1);sampleTrails();audioTick(t);
  journeyTick(dt);
  {const e=1-Math.pow(.002,dt);cam.dist=Math.exp(Math.log(cam.dist)+(Math.log(cam.gd)-Math.log(cam.dist))*e)}levels();if(!J&&!reduce&&!drag&&now-lastUser>3000)cam.yaw+=dt*.03;
@@ -423,7 +462,8 @@ cv.addEventListener("pointermove",e=>{if(ptrs.has(e.pointerId))ptrs.set(e.pointe
  if(!drag){const k=pickAt(e.clientX,e.clientY);hoverId=k?k.id:null;cv.classList.toggle("hover",!!k)}
  if(drag&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>4)moved=true;
  if(drag){cam.yaw=drag.yaw+(e.clientX-drag.x)*.006;cam.pitch=Math.max(-1.45,Math.min(1.45,drag.pitch-(e.clientY-drag.y)*.006));lastUser=performance.now()}});
-const up=e=>{if(drag&&!moved&&e.type==="pointerup"){const k=pickAt(e.clientX,e.clientY);k?openInfo(k.id):closeInfo()}ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;drag=null;cv.classList.remove("drag")};
+let lastTap=0,lastTapX=0,lastTapY=0;
+const up=e=>{if(drag&&!moved&&e.type==="pointerup"){const now=performance.now();if(e.pointerType!=="mouse"&&now-lastTap<320&&Math.hypot(e.clientX-lastTapX,e.clientY-lastTapY)<40){zoom(cam.gd/3);lastTap=0}else{lastTap=now;lastTapX=e.clientX;lastTapY=e.clientY;const k=pickAt(e.clientX,e.clientY);k?openInfo(k.id):closeInfo()}}ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;drag=null;cv.classList.remove("drag")};
 cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);
 cv.addEventListener("wheel",e=>{e.preventDefault();if(J)endJourney();lastUser=performance.now();zoom(cam.gd*Math.exp(e.deltaY*(Math.log10(cam.gd)>4.3?.004:.0012)))},{passive:false});
 
@@ -480,7 +520,7 @@ function buildTimeline(){const T=[];JSTOPS.forEach((st,i)=>{if(i>0){const a=JSTO
 const pitchFor=L=>-.35-.65*sm(10.3,11.2,L)*(1-sm(12.4,13.1,L));
 function showTitle(t,sub){const b=$("#bigt");b.innerHTML="";b.textContent=t;if(sub){const s=document.createElement("small");s.textContent=sub;b.append(s)}b.classList.add("on")}
 function hideTitle(){$("#bigt").classList.remove("on")}
-function startJourney(){closeInfo();J={T:buildTimeline(),i:0,el:0,shown:-1};document.body.classList.add("journey");const L=JSTOPS[0][0];cam.dist=cam.gd=Math.pow(10,L);cam.pitch=pitchFor(L);WS.forEach(w=>w.r=0)}
+function startJourney(){closeInfo();if(typeof setSheet==="function"){setSheet(false);setAbout(false)}J={T:buildTimeline(),i:0,el:0,shown:-1};document.body.classList.add("journey");const L=JSTOPS[0][0];cam.dist=cam.gd=Math.pow(10,L);cam.pitch=pitchFor(L);WS.forEach(w=>w.r=0)}
 function endJourney(){if(!J)return;J=null;document.body.classList.remove("journey");hideTitle();cam.gd=cam.dist;$("#flash").style.opacity=0;lastUser=performance.now()}
 const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
 /* warp streaks */
@@ -519,6 +559,20 @@ function whoosh(){if(!AC||!sndOn)return;const t=AC.currentTime,d=2.1,len=AC.samp
 function boom(){if(!AC||!sndOn)return;const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type="sine";o.frequency.setValueAtTime(72,t);o.frequency.exponentialRampToValueAtTime(28,t+1.4);g.gain.setValueAtTime(.9,t);g.gain.exponentialRampToValueAtTime(.0001,t+1.6);o.connect(g);g.connect(master);o.start(t);o.stop(t+1.7);
  const len=AC.sampleRate*.8,b=AC.createBuffer(1,len,AC.sampleRate),x=b.getChannelData(0);for(let i=0;i<len;i++)x[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);const s=AC.createBufferSource();s.buffer=b;const f=AC.createBiquadFilter();f.type="lowpass";f.frequency.value=600;const ng=AC.createGain();ng.gain.value=.5;s.connect(f);f.connect(ng);ng.connect(master);ng.connect(AC.space);s.start(t)}
 $("#journey").addEventListener("click",()=>{J?endJourney():startJourney()});
+
+/* ===== mobile sheets ===== */
+function setSheet(on){document.body.classList.toggle("sheet",on);$("#menu").setAttribute("aria-expanded",on)}
+function setAbout(on){document.body.classList.toggle("about",on);$("#aboutB").setAttribute("aria-expanded",on)}
+$("#menu").addEventListener("click",()=>{setAbout(false);closeInfo();setSheet(!document.body.classList.contains("sheet"))});
+$("#aboutB").addEventListener("click",()=>{setSheet(false);closeInfo();setAbout(!document.body.classList.contains("about"))});
+$("#scrim").addEventListener("click",()=>{setSheet(false);setAbout(false)});
+document.querySelectorAll("[data-fly]").forEach(b=>b.addEventListener("click",()=>{if(MOB)setSheet(false)}));
+/* swipe down closes a sheet */
+[["#more",()=>setSheet(false)],["#info",()=>closeInfo()],[".note",()=>setAbout(false)]].forEach(([sel,close])=>{const el=$(sel);let y0=null;
+ el.addEventListener("touchstart",e=>{y0=el.scrollTop<=0?e.touches[0].clientY:null},{passive:true});
+ el.addEventListener("touchend",e=>{if(y0!==null&&e.changedTouches[0].clientY-y0>60)close();y0=null},{passive:true})});
+/* the about sheet starts with the project description */
+{const lead=document.createElement("p");lead.className="lead";lead.textContent=$(".brand p").textContent;$(".note").prepend(lead);if(MOB)$(".note").lastChild.textContent=$(".note").lastChild.textContent.replace("Колесом мыши","Щипком или двойным тапом")}
 /* ===== info cards ===== */
 const INFO={
 "Солнце":["Звезда · жёлтый карлик G2V",[["Диаметр","109 Земель"],["Поверхность","≈5 500 °C"],["Возраст","4,6 млрд лет"],["Масса","99,86% массы системы"]],"Солнце обходит центр Галактики со скоростью около 230 км/с. Один полный оборот занимает примерно 230 млн лет."],
@@ -573,13 +627,13 @@ Object.assign(INFO,{"Ланиакея":["Сверхскопление · бас�
 "Сверхскопление Геркулеса":["Бассейн притяжения",[["Расстояние","≈500 млн св. лет"]],"Группа богатых скоплений в северном небе. Входит в Великую стену CfA2, одну из крупнейших известных структур."],"Реликтовое излучение":["Самый древний свет",[["Возраст","≈380 тыс. лет после Большого взрыва"],["Температура","2,725 K"],["Расстояние сейчас","≈46,5 млрд св. лет"]],"Свет, оставшийся с момента, когда Вселенная впервые стала прозрачной. Пятна на карте — разница температур в стотысячные доли градуса; из таких зародышей выросла вся космическая паутина."],
 "Наблюдаемая Вселенная":["Всё, что в принципе можно увидеть",[["Радиус","≈46,5 млрд св. лет"],["Возраст","≈13,8 млрд лет"],["Галактик","≈2 трлн (оценка)"]],"Радиус больше возраста, умноженного на скорость света, потому что пространство расширялось, пока свет летел к нам. Центр — там, где наблюдатель: каждый видит себя в середине своей сферы."]});
 INFO["Великий аттрактор"][2]+=" Всё это вместе с нами — сверхскопление Ланиакея, ≈520 млн св. лет в поперечнике, ≈100 000 галактик.";
-function pickAt(x,y){let best=null,bd=1e9;PICK.forEach(o=>{const d=Math.hypot(o.x-x,o.y-y);if(d<o.r&&d<bd){bd=d;best=o}});return best}
-function openInfo(id){const d=INFO[id];if(!d)return;selId=id;$("#iKind").textContent=d[0];$("#iName").textContent=id;
+function pickAt(x,y){let best=null,bd=1e9;PICK.forEach(o=>{const d=Math.hypot(o.x-x,o.y-y);if(d<o.r+(MOB?14:0)&&d<bd){bd=d;best=o}});return best}
+function openInfo(id){const d=INFO[id];if(!d)return;if(MOB){setSheet(false);setAbout(false)}selId=id;$("#iKind").textContent=d[0];$("#iName").textContent=id;
  const dl=$("#iFacts");dl.textContent="";d[1].forEach(([k,v])=>{const dt=document.createElement("dt"),dd=document.createElement("dd");dt.textContent=k;dd.textContent=v;dl.append(dt,dd)});
  $("#iText").textContent=d[2];$("#info").classList.add("open")}
 function closeInfo(){selId=null;$("#info").classList.remove("open")}
 $("#infoX").addEventListener("click",closeInfo);
-addEventListener("keydown",e=>{if(e.key==="Escape"){closeInfo();endJourney()}});
+addEventListener("keydown",e=>{if(e.key==="Escape"){closeInfo();endJourney();setSheet(false);setAbout(false)}});
 addEventListener("resize",resize);resize();
 /* warm start: a few years already flown so the spirals are visible on first frame */
 for(let i=0;i<=600;i++){simT=i*.01;sampleTrails()}
