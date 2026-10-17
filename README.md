@@ -23,6 +23,7 @@ A single-page canvas experience: the Sun flies through the Galaxy at ~230 km/s w
 - **Click** any planet, star, galaxy or cluster — info card
 - **▶ Journey** — a ~45 s guided zoom-out to the edge of the universe and a 2 s hyperjump back
 - Toggles: real distances, flight through the galaxy, trails, orbits, names, flows, glow, sound
+- **Languages:** English, Czech and Russian — picked from the browser language, switchable with RU / EN / CS
 
 ## What is real and what is modelled
 
@@ -46,6 +47,8 @@ MIT — see [LICENSE](LICENSE).
 **Сайт:** https://oz-the-magician.github.io/solar-vortex/
 
 Солнце летит сквозь Галактику со скоростью ~230 км/с, а планеты рисуют вокруг него спирали. Колесом мыши можно отъехать от орбит планет до края наблюдаемой Вселенной: Солнечная система → ближайшие звёзды → Млечный Путь → Местная группа → Ланиакея → её соседи → космическая паутина → реликтовое излучение.
+
+**Языки:** английский, чешский и русский — выбираются по языку браузера, переключаются кнопками RU / EN / CS.
 
 **Управление:** перетаскивание вращает камеру, колесо или щипок — масштаб, клик по объекту открывает карточку с фактами. Кнопка «▶ Путешествие» запускает 45-секундный отлёт к краю Вселенной и двухсекундный гиперпрыжок обратно.
 
