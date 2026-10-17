@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Solar system flying through the galaxy, zoomable from planetary orbits to the observable universe.">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}[hidden]{display:none!important}</style>
+<title>Солнечный вихрь</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: full-screen canvas, the sun flies through space with planets leaving helices; HUD top, controls bottom. Single dark look, same visual world as Skill Synapse. */
+:root{
+  --out:cubic-bezier(.23,1,.32,1);
+  --void:#04060C; --deep:#0A1020; --panel:rgb(12 18 34 / .82); --line:rgb(120 160 255 / .18);
+  --text:#E6ECFF; --text-2:#9AA6C8; --text-3:#5F6B8E; --sun:#FFC266; --cyan:#5CE1FF;
+  --display:"Chakra Petch","Eurostile",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--void);color:var(--text);font-family:var(--body);overflow:hidden;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+#cv{position:fixed;inset:0;display:block;cursor:grab;touch-action:none}
+#cv.drag{cursor:grabbing}
+#cv.hover{cursor:pointer}
+.info{position:fixed;z-index:6;right:max(16px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 120px);width:min(340px,calc(100% - 32px));padding:18px 18px 16px;transform:translateX(16px);opacity:0;pointer-events:none;transition:opacity .25s var(--out),transform .25s var(--out)}
+.info.open{opacity:1;transform:none;pointer-events:auto}
+.info .kind{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--sun)}
+.info h2{margin:6px 0 12px;font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.03em;line-height:1.15;text-wrap:balance;padding-right:28px}
+.info dl{margin:0 0 12px;display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:13px}
+.info dt{color:var(--text-3)}
+.info dd{margin:0;font-family:var(--mono);font-size:12.5px;color:var(--text);font-variant-numeric:tabular-nums}
+.info p{margin:0;font-size:14px;line-height:1.5;color:var(--text-2)}
+.info .x{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:transparent;cursor:pointer;color:var(--text-2)}
+.info .x:hover{border-color:rgb(255 194 102 / .5);color:var(--text)}
+.glass{background:var(--panel);border:1px solid var(--line);border-radius:12px;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 10px 40px rgb(0 0 0 / .35)}
+.hud{position:fixed;z-index:5;top:calc(env(safe-area-inset-top,0px) + 14px);left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;pointer-events:none}
+.hud>*{pointer-events:auto}
+.brand{padding:10px 16px;max-width:420px}
+.brand h1{margin:0;font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.08em;text-transform:uppercase;text-wrap:balance}
+.brand p{margin:4px 0 0;color:var(--text-2);font-size:12.5px;line-height:1.45}
+.readout{padding:10px 14px;font-family:var(--mono);font-size:12px;color:var(--text-2);display:grid;grid-template-columns:auto auto;gap:2px 14px;font-variant-numeric:tabular-nums}
+.readout b{color:var(--sun);font-weight:500;text-align:right}
+.ctrl{position:fixed;z-index:5;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 12px;width:fit-content;max-width:calc(100% - 32px)}
+.ctrl label{font-size:12px;color:var(--text-2);display:flex;gap:8px;align-items:center;font-family:var(--mono)}
+.ctrl input[type=range]{width:140px;accent-color:var(--sun)}
+.btn{background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px;cursor:pointer;transition:border-color .2s,background .2s}
+.btn:hover{border-color:rgb(255 194 102 / .5)}
+.btn[aria-pressed="true"]{background:rgb(255 194 102 / .14);border-color:rgb(255 194 102 / .55);color:var(--sun)}
+.note{position:fixed;z-index:4;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 130px);font-size:11px;color:var(--text-3);max-width:260px;line-height:1.4;text-align:right}
+body.journey .level,body.journey .hud,body.journey .ctrl,body.journey .note,body.journey .info{opacity:0;pointer-events:none;transition:opacity .8s}
+.hud,.ctrl,.note{transition:opacity .6s}
+.bigt{position:fixed;z-index:7;left:50%;top:22%;transform:translate(-50%,-50%);font-family:var(--display);font-weight:700;font-size:clamp(26px,5vw,52px);letter-spacing:.14em;text-transform:uppercase;color:var(--text);text-align:center;opacity:0;pointer-events:none;transition:opacity .9s var(--out),letter-spacing 2.4s var(--out);text-shadow:0 0 30px rgb(255 194 102 / .35);width:max-content;max-width:calc(100% - 32px)}
+.bigt.on{opacity:.92;letter-spacing:.22em}
+.bigt small{display:block;margin-top:10px;font-family:var(--mono);font-weight:400;font-size:13px;letter-spacing:.08em;text-transform:none;color:var(--text-2)}
+.jhint{position:fixed;z-index:7;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 16px);font-family:var(--mono);font-size:11px;color:var(--text-3);opacity:0;transition:opacity .6s;pointer-events:none}
+body.journey .jhint{opacity:1}
+#flash{position:fixed;inset:0;z-index:8;background:#fff;opacity:0;pointer-events:none}
+.btn.go{border-color:rgb(255 194 102 / .55);color:var(--sun)}
+.level{position:fixed;z-index:4;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 120px);font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-2);pointer-events:none;transition:opacity .4s}
+.scalebar{position:fixed;z-index:4;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 130px);display:flex;flex-direction:column;align-items:center;gap:4px;font-family:var(--mono);font-size:11px;color:var(--text-2);pointer-events:none;font-variant-numeric:tabular-nums}
+.scalebar i{display:block;height:6px;border:1px solid var(--text-2);border-top:0}
+@media (max-width:760px){.info{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 140px);max-height:45vh;overflow:auto}.level{top:calc(env(safe-area-inset-top,0px) + 70px)}.scalebar{bottom:calc(env(safe-area-inset-bottom,0px) + 190px)}.note{display:none}.brand p{display:none}.ctrl input[type=range]{width:100px}}
+</style>
+
+</head>
+<body>
+<canvas id="cv" aria-label="Солнце и планеты движутся сквозь космос, оставляя спиральные следы"></canvas>
+<div class="hud">
+  <div class="brand glass"><h1>Солнечный вихрь</h1><p>Солнце летит вокруг центра Галактики примерно на 230 км/с. Планеты обращаются вокруг него, и их путь в пространстве складывается в спирали. Плоскость орбит наклонена к направлению полёта примерно на 60°.</p></div>
+  <div class="readout glass" aria-live="off">
+    <span>Время</span><b id="yr">0 лет</b>
+    <span>Солнце прошло</span><b id="dist">0 а.е.</b>
+    <span>Оборотов Земли</span><b id="orb">0</b>
+    <span>Кадров/с</span><b id="fps">–</b>
+  </div>
+</div>
+<div class="bigt" id="bigt"></div><div class="jhint">Esc или клик — прервать</div><div id="flash"></div>
+<div class="ctrl glass">
+  <button class="btn go" id="journey">▶ Путешествие</button>
+  <label for="spd">Скорость <input id="spd" type="range" min="0" max="100" value="38"><span id="spdv"></span></label>
+  <button class="btn" id="scale" aria-pressed="true">Реальные расстояния</button>
+  <button class="btn" id="move" aria-pressed="true">Полёт по Галактике</button>
+  <button class="btn" id="trails" aria-pressed="true">Спирали</button>
+  <button class="btn" id="rings" aria-pressed="true">Орбиты</button>
+  <button class="btn" id="names" aria-pressed="true">Названия</button>
+  <button class="btn" id="view">Вид сбоку</button>
+  <button class="btn" id="reset">Сбросить</button>
+  <button class="btn" data-fly="sys">Система</button>
+  <button class="btn" data-fly="nb">Соседи</button>
+  <button class="btn" data-fly="gal">Галактика</button>
+  <button class="btn" data-fly="lg">Местная группа</button>
+  <button class="btn" data-fly="lan">Ланиакея</button>
+  <button class="btn" data-fly="uni">Вселенная</button>
+  <button class="btn" id="flows" aria-pressed="true">Потоки</button>
+  <button class="btn" id="glow" aria-pressed="true">Свечение</button>
+  <button class="btn" id="snd" aria-pressed="false">Звук</button>
+  <label for="vol">Громкость <input id="vol" type="range" min="0" max="100" value="60"></label>
+</div>
+<aside class="info glass" id="info" aria-live="polite"><button class="x" id="infoX" aria-label="Закрыть">✕</button><div class="kind" id="iKind"></div><h2 id="iName"></h2><dl id="iFacts"></dl><p id="iText"></p></aside>
+<div class="level" id="level">Солнечная система</div>
+<div class="scalebar" aria-hidden="true"><i id="sbar"></i><span id="slab"></span></div>
+<div class="note">В режиме «Реальные расстояния» орбиты соотносятся точно; чтобы разглядеть Меркурий, Венеру, Землю и Марс, приблизьте камеру. Солнце всё равно нарисовано крупнее настоящего: в этом масштабе его диск был бы меньше пикселя. Скорость полёта уменьшена, чтобы витки были различимы. Колесом мыши можно отъехать до ближайших звёзд и всей Галактики: позиции соседних звёзд настоящие, форма Млечного Пути построена по модели рукавов. Галактики Местной группы и скопления Ланиакеи стоят на реальных расстояниях, но направления и нити между ними упрощены. Золотые «Потоки» показывают, куда движутся галактики: все притоки стекаются к Великому аттрактору, как на карте Талли и др. (2014); форма линий модельная. Соседние бассейны (Шепли, Персей–Рыбы, Волосы Вероники, Геркулес) стоят на реальных расстояниях, а их притоки модельные. Космическая паутина и её бассейны на самом большом уровне построены процедурно, а реликтовое излучение раскрашено шумом в стиле карты Planck.</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const cv=$("#cv"),ctx=cv.getContext("2d");let W=0,H=0,DPR=1,FOC=800;
+const POWER=.7;
+
+/* planets: a = semi-major axis (AU), P = period (years), size = drawn radius */
+const PL=[
+ ["Меркурий",.387,.241,"#B9AFA6",3.2],["Венера",.723,.615,"#F2C98A",4.6],["Земля",1,1,"#5CB8FF",4.8],["Марс",1.524,1.881,"#FF7A4D",3.8],
+ ["Юпитер",5.203,11.86,"#E8B98A",9],["Сатурн",9.537,29.46,"#EAD49A",8,true],["Уран",19.19,84.01,"#8FE6E6",6.4],["Нептун",30.07,164.8,"#5C7CFF",6.2]
+].map(([n,a,P,c,s,ring],i)=>({n,a,P,c,s,ring,ph:i*1.7+.4,trail:[],last:-1}));
+let realScale=true;/* real: linear 60 px per AU; compressed: 62·a^0.58 so Neptune fits */
+const RAD=p=>realScale?60*p.a:62*Math.pow(p.a,.58);
+const SUNW=()=>.9*RAD(PL[0])/3.6;/* sun glow ends inside Mercury orbit; the true disk would be ~0.3 px */
+const V=150;/* display units the sun travels per year (stylized; real ratio would stretch the coils far more) */
+const TILT=Math.PI/3;/* orbital plane vs direction of motion */
+/* motion along +X; plane basis: e1 along Z, e2 tilted from X by 60° */
+const E1=[0,0,1],E2=[Math.cos(TILT),Math.sin(TILT),0];
+let simT=0,moving=true,showTr=true,showRings=true,showNames=true;
+const sunPos=t=>[moving?V*t:0,0,0];
+function planetPos(p,t){const th=p.ph+2*Math.PI*t/p.P,c=Math.cos(th),s=Math.sin(th),S=sunPos(t),R=RAD(p);return [S[0]+R*(c*E1[0]+s*E2[0]),S[1]+R*(c*E1[1]+s*E2[1]),S[2]+R*(c*E1[2]+s*E2[2])]}
+
+/* camera orbiting the sun */
+const cam={yaw:-.9,pitch:-.32,dist:2600,gd:2600,tgt:[0,0,0]};let cy,sy,cp,sp;
+function camPrep(){cy=Math.cos(cam.yaw);sy=Math.sin(cam.yaw);cp=Math.cos(cam.pitch);sp=Math.sin(cam.pitch)}
+function proj(x,y,z){x-=cam.tgt[0];y-=cam.tgt[1];z-=cam.tgt[2];const x1=x*cy-z*sy,z1=x*sy+z*cy,y2=y*cp-z1*sp,z2=y*sp+z1*cp+cam.dist;const s=FOC/Math.max(20,z2);return [W/2+x1*s,H/2-y2*s,z2,s]}
+
+/* ===== the sun, taken from Skill Synapse (claude-skill-index) ===== */
+function hexA(h,a){const n=parseInt(h.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${Math.max(0,Math.min(1,a))})`}
+function qpt(x1,y1,cx,cy,x2,y2,t){const u=1-t;return [u*u*x1+2*u*t*cx+t*t*x2,u*u*y1+2*u*t*cy+t*t*y2]}
+const ORB={};
+function orbSprite(c){if(ORB[c])return ORB[c];const N=256,cv2=document.createElement("canvas");cv2.width=cv2.height=N;const g=cv2.getContext("2d"),img=g.createImageData(N,N),D=img.data;
+ const n=parseInt(c.slice(1),16),cr=n>>16&255,cg=n>>8&255,cb=n&255;
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++){const d=Math.hypot(x-N/2+.5,y-N/2+.5)/(N/2);if(d>=1)continue;
+  const win=Math.pow(1-d*d,2),core=Math.exp(-Math.pow(d/.06,2)),bloom=.8*Math.exp(-d/.09)+.38*Math.exp(-d/.22)+.14*Math.exp(-d/.5);
+  const I=Math.min(1,(core+bloom)*win),w=core/(core+bloom+1e-6),i=(y*N+x)*4;D[i]=cr+(255-cr)*w;D[i+1]=cg+(255-cg)*w;D[i+2]=cb+(255-cb)*w;D[i+3]=I*255}
+ g.putImageData(img,0,0);return ORB[c]=cv2}
+function glowOrb(x,y,R,c,k){const ga=ctx.globalAlpha;ctx.globalCompositeOperation="lighter";ctx.globalAlpha=ga*Math.min(1,k);ctx.drawImage(orbSprite(c),x-R,y-R,R*2,R*2);ctx.globalAlpha=ga}
+const PN=150,pcv=document.createElement("canvas");pcv.width=pcv.height=PN;const pctx=pcv.getContext("2d"),pimg=pctx.createImageData(PN,PN);let pLast=-1;
+function h3(x,y,z){let h=Math.imul(x,374761393)^Math.imul(y,668265263)^Math.imul(z,1274126177);h=Math.imul(h^(h>>>13),1103515245);return ((h^(h>>>16))>>>0)/4294967295}
+function vn(x,y,z){const X=Math.floor(x),Y=Math.floor(y),Z=Math.floor(z),fx=x-X,fy=y-Y,fz=z-Z,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy),w=fz*fz*(3-2*fz);
+ const l=(a,b,t)=>a+(b-a)*t;return l(l(l(h3(X,Y,Z),h3(X+1,Y,Z),u),l(h3(X,Y+1,Z),h3(X+1,Y+1,Z),u),v),l(l(h3(X,Y,Z+1),h3(X+1,Y,Z+1),u),l(h3(X,Y+1,Z+1),h3(X+1,Y+1,Z+1),u),v),w)}
+const RAMP=[[0,[235,110,35]],[.35,[250,155,60]],[.6,[255,200,110]],[.8,[255,232,175]],[1,[255,250,235]]];
+function ramp(v){v=Math.max(0,Math.min(1,v));for(let i=1;i<RAMP.length;i++)if(v<=RAMP[i][0]){const [a,ca]=RAMP[i-1],[b,cb]=RAMP[i],k=(v-a)/(b-a);return [ca[0]+(cb[0]-ca[0])*k,ca[1]+(cb[1]-ca[1])*k,ca[2]+(cb[2]-ca[2])*k]}return RAMP[RAMP.length-1][1]}
+function plasma(t){const tt=reduce?3:t;if(pLast>=0&&tt-pLast<.09)return pcv;pLast=tt;const D=pimg.data,rot=tt*.05,flow=tt*(.12+POWER*.18),ct=.55+POWER*.25;
+ for(let j=0;j<PN;j++)for(let i=0;i<PN;i++){const nx=(i+.5)/PN*2-1,ny=(j+.5)/PN*2-1,r2=nx*nx+ny*ny,o=(j*PN+i)*4;if(r2>=1){D[o+3]=0;continue}
+  const nz=Math.sqrt(1-r2),cr=Math.cos(rot),sr=Math.sin(rot),px=nx*cr+nz*sr,pz=-nx*sr+nz*cr,py=ny;
+  const q=2.1,wx=vn(px*1.6+flow*.3,py*1.6,pz*1.6)-.5,wy=vn(px*1.6+5.2,py*1.6-flow*.3,pz*1.6+1.3)-.5;
+  let f=0,a=.55,fr=1;for(let k=0;k<4;k++){f+=a*vn((px+wx*.9)*q*fr+flow*fr*.5+k*3.7,(py+wy*.9)*q*fr-flow*.35,pz*q*fr+flow*.25+k*7.1);a*=.5;fr*=2.03}
+  let v=.58+(f-.5)*ct;const limb=Math.pow(1-nz,3);v=v*(1-.15*limb)+limb*.55;
+  const [R,G,B]=ramp(v);D[o]=R;D[o+1]=G;D[o+2]=B;D[o+3]=255*Math.min(1,(1-Math.sqrt(r2))*9)}
+ pctx.putImageData(pimg,0,0);return pcv}
+const flares=[];let fNext=0;
+function drawFlares(x,y,Rb,t){if(reduce)return;if(t>fNext){flares.push({a:Math.random()*Math.PI*2,w:.05+Math.random()*.1,h:.08+Math.random()*.22,t0:t,life:3+Math.random()*4,sd:Math.random()*99});fNext=t+(2.2-POWER*1.6)*(.5+Math.random())}
+ for(let i=flares.length-1;i>=0;i--){const f=flares[i],k=(t-f.t0)/f.life;if(k>1){flares.splice(i,1);continue}const env=Math.sin(Math.PI*k),hh=Rb*f.h*(.4+.6*Math.min(1,k*2));
+  const a1=f.a-f.w,a2=f.a+f.w,x1=x+Math.cos(a1)*Rb*.97,y1=y+Math.sin(a1)*Rb*.97,x2=x+Math.cos(a2)*Rb*.97,y2=y+Math.sin(a2)*Rb*.97,cx=x+Math.cos(f.a)*(Rb+hh*2),cy2=y+Math.sin(f.a)*(Rb+hh*2);
+  const nx=-Math.sin(f.a),ny=Math.cos(f.a),M=40;for(let k=0;k<=M;k++){const u=k/M,w=Math.sin(Math.PI*u),[px,py]=qpt(x1,y1,cx,cy2,x2,y2,u);
+   const n1=vn(k*.35,f.sd,t*.9)-.5,n2=vn(k*.6+11,f.sd*.7,t*1.4),d=n1*Rb*f.w*2.2*env,ox=px+nx*d+Math.cos(f.a)*n1*Rb*.05,oy=py+ny*d+Math.sin(f.a)*n1*Rb*.05;
+   const sz=Rb*(.035+.09*n2)*(.35+.65*w)*(.6+.4*env);glowOrb(ox,oy,sz*3.2,"#FF6A25",.55*env);glowOrb(ox,oy,sz*1.4,"#FFC877",.7*env*(.4+n2*.6));
+   if(n2>.72){const sx=ox+nx*(n1*Rb*.25),sy2=oy+ny*(n1*Rb*.25);glowOrb(sx,sy2,sz,"#FFE2A8",.5*env)}}}}
+function drawSun(p,t){const [x,y,,s]=p;const pul=reduce?1:1+Math.sin(t*1.1)*.03,Rb=Math.max(3,Math.min(120,SUNW()*s))*pul;
+ const hz=ctx.createRadialGradient(x,y,0,x,y,Rb*3.6);hz.addColorStop(0,`rgba(255,120,40,${.22+POWER*.2})`);hz.addColorStop(.22,`rgba(255,90,30,${.08+POWER*.1})`);hz.addColorStop(.55,"rgba(230,70,30,.02)");hz.addColorStop(1,"rgba(200,60,30,0)");
+ ctx.globalCompositeOperation="lighter";ctx.fillStyle=hz;ctx.beginPath();ctx.arc(x,y,Rb*3.6,0,Math.PI*2);ctx.fill();
+ glowOrb(x,y,Rb*3,"#FF6A1F",.85);glowOrb(x,y,Rb*2,"#FFA040",.85);
+ drawFlares(x,y,Rb,t);
+ ctx.globalCompositeOperation="source-over";ctx.drawImage(plasma(t),x-Rb,y-Rb,Rb*2,Rb*2);SUNSCR={x,y,R:Rb};if(LV.sys>.3)PICK.push({x,y,r:Math.max(Rb,8)+6,id:"Солнце"});
+ glowOrb(x,y,Rb*1.6,"#FFD27A",.7);glowOrb(x,y,Rb*1.2,"#FFF3D6",.08+POWER*.08)}
+/* ===== end of sun ===== */
+
+/* stars: a box of points around the sun, wrapped along the flight axis so they stream past */
+const STARS=[],BOX=9000;for(let i=0;i<900;i++)STARS.push([Math.random()*BOX-BOX/2,Math.random()*BOX-BOX/2,Math.random()*BOX-BOX/2,.3+Math.random()*.7,Math.random()<.12]);
+const wrap=(v,c)=>((v-c+BOX/2)%BOX+BOX)%BOX-BOX/2+c;
+
+/* trails: world-space samples, ~120 per orbit, kept for 2.5 orbits (or 40 years for slow ones) */
+function sampleTrails(){PL.forEach(p=>{const step=p.P/120;if(p.last<0||simT-p.last>=step){p.trail.push(planetPos(p,simT));p.last=simT;const keep=Math.min(300,Math.ceil(Math.min(2.5*p.P,40)/step)+1);while(p.trail.length>keep)p.trail.shift()}})}
+function resetTrails(){PL.forEach(p=>{p.trail=[];p.last=-1})}
+
+function drawTrail(p){const T=p.trail;if(T.length<2)return;const pts=T.map(q=>proj(q[0],q[1],q[2]));pts.push(proj(...planetPos(p,simT)));
+ ctx.globalCompositeOperation="lighter";ctx.lineCap="round";
+ for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i];if(a[2]<30||b[2]<30)continue;const k=i/pts.length;
+  ctx.strokeStyle=hexA(p.c,.06+.6*k*k);ctx.lineWidth=(.6+1.6*k)*Math.min(1.6,Math.max(.6,b[3]));ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke()}}
+function drawRing(p){const S=sunPos(simT),R=RAD(p);ctx.globalCompositeOperation="lighter";ctx.strokeStyle=hexA(p.c,.16);ctx.lineWidth=1;ctx.setLineDash([3,5]);ctx.beginPath();
+ for(let i=0;i<=96;i++){const th=i/96*Math.PI*2,c=Math.cos(th),s=Math.sin(th);const q=proj(S[0]+R*(c*E1[0]+s*E2[0]),S[1]+R*(c*E1[1]+s*E2[1]),S[2]+R*(c*E1[2]+s*E2[2]));i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])}ctx.stroke();ctx.setLineDash([])}
+function drawPlanet(p,q){const [x,y,z,s]=q;if(z<30)return;const r=p.s*Math.min(2.2,Math.max(.45,s));if(LV.sys>.3)PICK.push({x,y,r:Math.max(r,7)+7,id:p.n});PSCR.push([x,y,r,z]);
+ glowOrb(x,y,r*5,p.c,.55);
+ ctx.globalCompositeOperation="source-over";const g=ctx.createRadialGradient(x-r*.35,y-r*.35,r*.1,x,y,r);g.addColorStop(0,"#ffffff");g.addColorStop(.25,p.c);g.addColorStop(1,hexA(p.c,.35));ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+ if(p.ring){ctx.strokeStyle=hexA("#EAD49A",.7);ctx.lineWidth=Math.max(1,r*.18);ctx.beginPath();ctx.ellipse(x,y,r*2.1,r*.6,-.35,0,Math.PI*2);ctx.stroke()}
+ if(namesOn()){ctx.font="500 13px 'IBM Plex Sans', system-ui, sans-serif";ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillStyle="rgba(230,236,255,.78)";ctx.fillText(p.n,x+r+7,y-7);ctx.font="400 11.5px 'IBM Plex Mono', ui-monospace, monospace";ctx.fillStyle="rgba(154,166,200,.8)";ctx.fillText(p.a.toLocaleString("ru-RU")+" а.е.",x+r+7,y+9)}}
+function drawFlightArrow(){if(!moving)return;const S=sunPos(simT);const a=proj(S[0]-2600,S[1],S[2]),b=proj(S[0]+1200,S[1],S[2]);if(a[2]<30||b[2]<30)return;
+ ctx.globalCompositeOperation="lighter";const g=ctx.createLinearGradient(a[0],a[1],b[0],b[1]);g.addColorStop(0,"rgba(255,194,102,0)");g.addColorStop(.68,"rgba(255,194,102,.35)");g.addColorStop(1,"rgba(255,194,102,0)");ctx.strokeStyle=g;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke()}
+
+
+/* ===== cosmic levels: one space in px, 60 px = 1 AU ===== */
+const LYPX=63241*60;/* px per light year */
+const sm=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t)};
+let LV={sys:1,nb:0,gal:0,L:3};
+function levels(){const L=Math.log10(cam.dist);LV={L,sys:1-sm(4.3,5.4,L),nb:sm(5.6,6.8,L)*(1-sm(10.3,11,L)),gal:sm(8.8,10.3,L),tg:sm(10.1,11.1,L),pts:1-sm(12.5,13.2,L),mw:sm(12.3,13,L),lg:sm(12.2,13,L),lgLab:1-sm(14.2,14.8,L),lan:sm(13.9,14.9,L),tl:sm(14.3,15.2,L),web:sm(16.3,16.8,L),tu:sm(16.2,16.8,L),cmb:sm(17,17.5,L),nbr:sm(15.5,15.95,L)*(1-sm(16.55,17.05,L)),bloom:sm(10.4,11.4,L)};LV.lan*=1-sm(16.4,16.9,L)}
+/* nearest stars: name, distance (ly), RA (h), Dec (°), colour */
+const NEAR=[["Альфа Центавра (A, B и Проксима)",4.3,14.6,-61.5,"#FFE9B0"],["Звезда Барнарда",5.96,17.96,4.7,"#FF8A5C"],["Вольф 359",7.86,10.94,7,"#FF7A50"],["Лаланд 21185",8.31,11.06,36,"#FF9A6A"],["Сириус",8.6,6.75,-16.7,"#CFE0FF"],["Лейтен 726-8",8.79,1.65,-17.95,"#FF7A50"],["Росс 154",9.69,18.83,-23.8,"#FF8A5C"],["Эпсилон Эридана",10.5,3.55,-9.46,"#FFC98A"],["Лакайль 9352",10.7,23.1,-35.85,"#FF9A6A"],["Росс 128",11,11.79,.8,"#FF8A5C"],["61 Лебедя",11.4,21.12,38.7,"#FFB070"],["Процион",11.46,7.66,5.2,"#F4F2FF"],["Эпсилон Индейца",11.9,22.06,-56.8,"#FFB070"],["Тау Кита",11.9,1.73,-15.9,"#FFE2A0"]].map(([n,d,ra,de,c])=>{const a=ra/24*Math.PI*2,b=de*Math.PI/180;return {n,d,c,p:[Math.cos(b)*Math.cos(a)*d*LYPX,Math.sin(b)*d*LYPX,Math.cos(b)*Math.sin(a)*d*LYPX]}});
+const NBF=[];{let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;for(let i=0;i<700;i++){const u=rnd()*2-1,a=rnd()*Math.PI*2,d=(5+Math.cbrt(rnd())*75)*LYPX;NBF.push([Math.sqrt(1-u*u)*Math.cos(a)*d,u*d,Math.sqrt(1-u*u)*Math.sin(a)*d,.3+rnd()*.7])}}
+/* Milky Way: disk in the XZ plane, centre 26 000 ly from the Sun along -Z; Sun moves along +X (orbit tangent) */
+const GC=[0,0,-26000*LYPX];const GAL=[];
+{let seed=11;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647,gs=()=>{let u=0;for(let i=0;i<4;i++)u+=rnd();return (u-2)/1.15};
+ const add=(x,y,z,c,b)=>GAL.push([GC[0]+x*LYPX,GC[1]+y*LYPX,GC[2]+z*LYPX,c,b]);
+ const bar=27*Math.PI/180;for(let i=0;i<3200;i++){const l=gs()*4200,w=gs()*1500,x=l*Math.cos(bar)-w*Math.sin(bar),z=l*Math.sin(bar)+w*Math.cos(bar);add(x,gs()*900,z,rnd()<.7?"255,214,160":"255,236,200",.15+rnd()*.3)}
+ const B=Math.tan(12*Math.PI/180);for(let k=0;k<4;k++)for(let i=0;i<3000;i++){const th=rnd()*13.3,rr=3000*Math.exp(B*th),ph=th+k*Math.PI/2+bar+gs()*.18,R=rr*(1+gs()*.07);const x=Math.cos(ph)*R,z=Math.sin(ph)*R;const q=rnd();add(x,gs()*350,z,q<.06?"255,140,190":q<.6?"170,200,255":"235,240,255",.35+rnd()*.65)}
+ for(let i=0;i<4500;i++){const R=-Math.log(1-rnd()*.995)*9000,a=rnd()*Math.PI*2;add(Math.cos(a)*R,gs()*500,Math.sin(a)*R,"200,210,240",.2+rnd()*.4)}}
+function drawCosmos(S){ctx.globalCompositeOperation="lighter";
+ if(LV.nb>.01){const A=LV.nb;
+  NBF.forEach(([x,y,z,b])=>{const q=proj(S[0]+x,S[1]+y,S[2]+z);if(q[2]<40)return;ctx.fillStyle=`rgba(210,220,255,${A*b*.55})`;ctx.fillRect(q[0]-.7,q[1]-.7,1.4,1.4)});
+  const o=proj(...S);ctx.font="500 13px 'IBM Plex Sans', system-ui, sans-serif";ctx.textBaseline="middle";ctx.textAlign="left";
+  NEAR.forEach(st=>{const q=proj(S[0]+st.p[0],S[1]+st.p[1],S[2]+st.p[2]);if(q[2]<40)return;
+   ctx.strokeStyle=`rgba(154,166,200,${.18*A})`;ctx.setLineDash([2,5]);ctx.beginPath();ctx.moveTo(o[0],o[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();ctx.setLineDash([]);
+   ctx.globalAlpha=A;glowOrb(q[0],q[1],11,st.c,.9);ctx.globalAlpha=1;if(A>.4)PICK.push({x:q[0],y:q[1],r:14,id:st.n});
+   if(LV.L<9.6&&namesOn()){ctx.globalCompositeOperation="source-over";ctx.fillStyle=`rgba(230,236,255,${.85*A})`;ctx.fillText(st.n,q[0]+10,q[1]-7);ctx.fillStyle=`rgba(154,166,200,${.85*A})`;ctx.font="400 11.5px 'IBM Plex Mono', ui-monospace, monospace";ctx.fillText(st.d.toLocaleString("ru-RU")+" св. г.",q[0]+10,q[1]+9);ctx.font="500 13px 'IBM Plex Sans', system-ui, sans-serif";ctx.globalCompositeOperation="lighter"}})}
+ if(LV.gal>.01){const A=LV.gal;
+  const c=proj(...GC);if(c[2]>40){const R=7000*LYPX*c[3];const g=ctx.createRadialGradient(c[0],c[1],0,c[0],c[1],R);g.addColorStop(0,`rgba(255,220,170,${.45*A})`);g.addColorStop(.4,`rgba(255,180,120,${.12*A})`);g.addColorStop(1,"rgba(255,160,100,0)");ctx.fillStyle=g;ctx.fillRect(c[0]-R,c[1]-R,R*2,R*2)}
+  if(LV.pts>.01){const hz=A*LV.pts;if(glowOn&&hz>.02){galBlob(GC,MWB,3.2e4*LYPX,"#7F8FD8",.32*hz,.22);galBlob(GC,MWB,1.1e4*LYPX,"#FFD9A8",.2*hz,.3)}}
+  if(LV.pts>.01)for(let i=0;i<GAL.length;i++){const p=GAL[i],q=proj(p[0],p[1],p[2]);if(q[2]<40||q[0]<-4||q[0]>W+4||q[1]<-4||q[1]>H+4)continue;ctx.fillStyle=`rgba(${p[3]},${A*LV.pts*p[4]*.6})`;const z=1.3;ctx.fillRect(q[0]-z/2,q[1]-z/2,z,z)}
+  if(LV.pts>.01&&glowOn){const dA=A*LV.pts;ctx.globalCompositeOperation="source-over";for(let i=0;i<DUST.length;i++){const d=DUST[i],q=proj(d[0],d[1],d[2]);if(q[2]<40||q[0]<-12||q[0]>W+12||q[1]<-12||q[1]>H+12)continue;const rr=Math.max(.8,Math.min(7,d[3]*q[3]));ctx.fillStyle=`rgba(6,7,14,${d[4]*dA})`;ctx.beginPath();ctx.arc(q[0],q[1],rr,0,Math.PI*2);ctx.fill()}ctx.globalCompositeOperation="lighter"}
+  if(c[2]>40&&LV.L>10&&LV.L<12.4){PICK.push({x:c[0],y:c[1],r:16,id:"Стрелец A*"});ctx.globalAlpha=A;glowOrb(c[0],c[1],10,"#FFE2B0",1);ctx.globalAlpha=1;ctx.globalCompositeOperation="source-over";ctx.fillStyle=`rgba(230,236,255,${.8*A})`;ctx.font="500 13px 'IBM Plex Sans', system-ui, sans-serif";ctx.textAlign="left";if(namesOn())ctx.fillText("Стрелец A* — центр Галактики",c[0]+14,c[1]+34);ctx.globalCompositeOperation="lighter"}}
+ /* "you are here" marker once the system is a dot */
+ const yh=sm(5.2,6.2,LV.L);if(yh>.01){const o=proj(...S);if(LV.sys<=.3)PICK.push({x:o[0],y:o[1],r:16,id:"Солнце"});ctx.globalCompositeOperation="source-over";ctx.strokeStyle=`rgba(255,194,102,${.8*yh})`;ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(o[0],o[1],14,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle=`rgba(255,194,102,${.95*yh})`;ctx.font="600 14px 'Chakra Petch', sans-serif";ctx.textAlign="left";ctx.textBaseline="middle";if(namesOn())ctx.fillText(LV.L>16.6?"ВЫ ЗДЕСЬ · в центре своей наблюдаемой Вселенной":LV.L>15.6?"ВЫ ЗДЕСЬ · Ланиакея":LV.L>14.4?"ВЫ ЗДЕСЬ · Местная группа":LV.L>12.4?"ВЫ ЗДЕСЬ · Млечный Путь":LV.L>9.6?"ВЫ ЗДЕСЬ · Солнце, рукав Ориона":"Солнце",o[0]+20,o[1]);ctx.globalCompositeOperation="lighter";if(LV.sys<.3){glowOrb(o[0],o[1],9,"#FFC266",.9*yh)}}}
+
+/* ===== Local Group & Laniakea (positions in ly; Mly figures from catalogues, scene orientation arbitrary) ===== */
+const M=1e6;
+function basis(seed){let a=Math.sin(seed*12.9898)*43758.5453;a-=Math.floor(a);let b=Math.sin(seed*78.233)*12543.13;b-=Math.floor(b);const th=a*Math.PI*2,ph=Math.acos(2*b-1);const n=[Math.sin(ph)*Math.cos(th),Math.cos(ph),Math.sin(ph)*Math.sin(th)];
+ let u=[n[1],-n[0],0];const l=Math.hypot(...u)||1;u=u.map(v=>v/l);const v=[n[1]*u[2]-n[2]*u[1],n[2]*u[0]-n[0]*u[2],n[0]*u[1]-n[1]*u[0]];return [u,v]}
+const dirv=(x,y,z,d)=>{const l=Math.hypot(x,y,z);return [x/l*d,y/l*d,z/l*d]};
+const M31=dirv(.55,-.35,.76,2.54*M);
+/* [name, position (ly from Sun), diameter (ly), colour, type for INFO] */
+const LG=[["Туманность Андромеды",M31,152e3,"#DCE4FF",1],["Галактика Треугольника",[M31[0]+.5*M,M31[1]+.35*M,M31[2]-.3*M],6e4,"#C8D8FF",2],
+ ["M32",[M31[0]+.02*M,M31[1]-.01*M,M31[2]],6.5e3,"#FFE2C0",3],["M110",[M31[0]-.03*M,M31[1]+.02*M,M31[2]+.01*M],1.7e4,"#FFE2C0",4],
+ ["Большое Магелланово Облако",dirv(-.3,-.8,.5,1.6e5),3.2e4,"#D8E4FF",5],["Малое Магелланово Облако",dirv(-.2,-.85,.45,2e5),1.9e4,"#D8E4FF",6],
+ ["NGC 6822",dirv(.7,.2,-.68,1.6*M),7e3,"#C8D8FF",7],["IC 1613",dirv(.3,-.6,.74,2.4*M),1e4,"#C8D8FF",8],["Карлик в Стрельце",dirv(.05,-.2,-.98,7e4),1e4,"#FFE2C0",9],
+ ["Лев I",dirv(-.6,.6,.5,8.2e5),2e3,"#FFE2C0",10],["Карлик в Печи",dirv(-.4,-.7,-.6,4.6e5),6e3,"#FFE2C0",11],["WLM",dirv(.6,-.7,.4,3*M),8e3,"#C8D8FF",12]].map(([n,p,d,c,i])=>({n,p:[p[0]*LYPX,p[1]*LYPX,p[2]*LYPX],d:d*LYPX,c,b:basis(i)})).sort((a,b)=>b.d-a.d);
+const MWB=[[1,0,0],[0,0,1]];/* Milky Way disk plane */
+/* superclusters: supergalactic-style coordinates converted to ly (Mly) */
+const CL={"Великий аттрактор":[-215,36,22],"Скопление Девы":[-13,52,-2],"Скопление Печи":[-5,-40,-45],"Скопление Центавра":[-150,64,-35],"Скопление Гидры":[-110,-60,-80],"Скопление Павлина–Индейца":[-150,-60,110],"Скопление Волос Вероники":[0,316,44]};
+for(const k in CL)CL[k]=CL[k].map(v=>v*M*LYPX);
+const GA=CL["Великий аттрактор"];
+const LAN=[];
+{let seed=23;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647,gs=()=>{let u=0;for(let i=0;i<4;i++)u+=rnd();return (u-2)/1.15};const MP=M*LYPX;
+ const add=(p,c,b)=>LAN.push([p[0],p[1],p[2],c,b]);
+ const blob=(c,n,sd,col)=>{for(let i=0;i<n;i++)add([c[0]+gs()*sd*MP,c[1]+gs()*sd*MP,c[2]+gs()*sd*MP],col,.35+rnd()*.65)};
+ const fil=(a,b,n,sd)=>{const mid=[(a[0]+b[0])/2+gs()*.18*Math.abs(a[0]-b[0]+1),(a[1]+b[1])/2+gs()*40*MP,(a[2]+b[2])/2+gs()*40*MP];for(let i=0;i<n;i++){const t=rnd(),u=1-t,w=Math.sin(Math.PI*t)*.7+.3;const p=[u*u*a[0]+2*u*t*mid[0]+t*t*b[0],u*u*a[1]+2*u*t*mid[1]+t*t*b[1],u*u*a[2]+2*u*t*mid[2]+t*t*b[2]];add([p[0]+gs()*sd*w*MP,p[1]+gs()*sd*w*MP,p[2]+gs()*sd*w*MP],rnd()<.5?"190,205,255":"235,225,255",.2+rnd()*.6)}};
+ const O=[0,0,0],c=CL;
+ [[O,c["Скопление Девы"]],[O,c["Скопление Печи"]],[c["Скопление Девы"],c["Скопление Центавра"]],[c["Скопление Центавра"],GA],[c["Скопление Гидры"],c["Скопление Центавра"]],[c["Скопление Гидры"],GA],[GA,c["Скопление Павлина–Индейца"]],[c["Скопление Печи"],c["Скопление Гидры"]],[c["Скопление Девы"],c["Скопление Волос Вероники"]],[c["Скопление Павлина–Индейца"],c["Скопление Печи"]]].forEach(([a,b])=>fil(a,b,900,9));
+ blob(c["Скопление Девы"],600,7,"255,232,200");blob(GA,900,16,"255,225,190");blob(c["Скопление Центавра"],700,7,"255,232,200");blob(c["Скопление Гидры"],500,6,"255,232,200");blob(c["Скопление Волос Вероники"],800,8,"255,232,200");blob(c["Скопление Печи"],300,3,"255,232,200");blob(c["Скопление Павлина–Индейца"],400,7,"255,232,200");
+ /* extra web: random nodes linked to their nearest neighbours */
+ const N=[];for(let i=0;i<26;i++){const u=rnd()*2-1,a=rnd()*Math.PI*2,d=(60+rnd()*260)*MP;N.push([GA[0]*.5+Math.sqrt(1-u*u)*Math.cos(a)*d,GA[1]*.5+u*d*.6,GA[2]*.5+Math.sqrt(1-u*u)*Math.sin(a)*d])}
+ N.forEach((p,i)=>{N.map((q,j)=>[j,Math.hypot(p[0]-q[0],p[1]-q[1],p[2]-q[2])]).filter(x=>x[0]!==i).sort((a,b)=>a[1]-b[1]).slice(0,2).forEach(([j])=>{if(j>i)fil(p,N[j],260,10)});blob(p,60,4,"240,235,255")});
+ for(let i=0;i<5000;i++){const u=rnd()*2-1,a=rnd()*Math.PI*2,d=Math.cbrt(rnd())*380*MP;add([GA[0]*.5+Math.sqrt(1-u*u)*Math.cos(a)*d,GA[1]*.5+u*d,GA[2]*.5+Math.sqrt(1-u*u)*Math.sin(a)*d],"170,185,230",.12+rnd()*.2)}}
+
+/* ===== Laniakea flow lines: a branching "river" whose tributaries all drain into the Great Attractor (after Tully et al. 2014) ===== */
+let showFlow=true;const namesOn=()=>showNames&&!(J&&J.noLbl);const FLOWS=[];
+{let seed=91;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;const MP=M*LYPX;
+ const norm=v=>{const l=Math.hypot(...v)||1;return v.map(x=>x/l)},add3=(a,b,k=1)=>[a[0]+b[0]*k,a[1]+b[1]*k,a[2]+b[2]*k];
+ const turn=(d,amt)=>norm([d[0]+(rnd()*2-1)*amt,d[1]+(rnd()*2-1)*amt*.6,d[2]+(rnd()*2-1)*amt]);
+ const B=[];/* branch: pts (outward from root), parent, at (index on parent) */
+ function grow(start,dir,len,parent,at,depth){const n=26,pts=[start];let d=dir,p=start;for(let i=1;i<=n;i++){d=turn(d,.16);p=add3(p,d,len/n);pts.push(p)}const id=B.length;B.push({pts,parent,at,depth});
+  if(depth<3){const kids=depth===0?5:depth===1?4:3;for(let k=0;k<kids;k++){const j=6+Math.floor(rnd()*(n-8));const nd=turn(norm(add3(d,turn(dir,1.4),1)),.6);grow(pts[j],nd,len*(.42+rnd()*.3),id,j,depth+1)}}
+  return id}
+ /* main trunk toward the Milky Way: bend the end exactly onto our position */
+ {const O=[0,0,0],dir=norm([-GA[0],-GA[1],-GA[2]]),L=Math.hypot(...GA);const id=grow(GA,dir,L*.92,-1,0,1);B[id].trunk=true;const p=B[id].pts,end=p[p.length-1],n=p.length-1;for(let i=0;i<=n;i++){const k=i/n;p[i]=add3(p[i],[O[0]-end[0],O[1]-end[1],O[2]-end[2]],k*k)}}
+ for(let k=0;k<7;k++){const u=rnd()*2-1,a=rnd()*Math.PI*2;grow(GA,[Math.sqrt(1-u*u)*Math.cos(a),u*.55,Math.sqrt(1-u*u)*Math.sin(a)],(150+rnd()*170)*MP,-1,0,0)}
+ /* every branch tip becomes a streamline running tip -> root */
+ B.forEach((b,bi)=>{const line=[];let cur=bi,from=b.pts.length-1;while(cur>=0){const pb=B[cur];for(let i=from;i>=0;i--)line.push(pb.pts[i]);from=pb.at;cur=pb.parent}
+  const copies=b.trunk?8:b.depth>=2?2:3;for(let c=0;c<copies;c++){const off=[(rnd()*2-1),(rnd()*2-1)*.6,(rnd()*2-1)],sp=(4+rnd()*6)*MP,n=line.length;
+   FLOWS.push({p:line.map((q,i)=>{const k=1-i/(n-1);return add3(q,off,sp*k)}),ph:rnd(),w:b.trunk?-1:b.depth})}})}
+const BASIN=[];{let seed=57;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;FLOWS.forEach(f=>{for(let i=0;i<6;i++){const q=f.p[Math.floor(rnd()*f.p.length)],j=25*M*LYPX;BASIN.push([q[0]+(rnd()*2-1)*j,q[1]+(rnd()*2-1)*j*.6,q[2]+(rnd()*2-1)*j])}})}
+function drawFlows(A,t){ctx.globalCompositeOperation="lighter";ctx.lineCap="round";
+ BASIN.forEach(b=>{const q=proj(...b);if(q[2]<40)return;ctx.fillStyle=`rgba(255,200,120,${.16*A})`;ctx.fillRect(q[0]-.6,q[1]-.6,1.2,1.2)});
+ FLOWS.forEach(f=>{ctx.beginPath();let ok=false;const P=f.p.map(q=>proj(...q));P.forEach((q,i)=>{if(q[2]<40){ok=false;return}if(!ok){ctx.moveTo(q[0],q[1]);ok=true}else ctx.lineTo(q[0],q[1])});
+  ctx.strokeStyle=`rgba(255,${f.w>=2?175:205},${f.w>=2?80:120},${(f.w<0?.3:f.w>=2?.10:.16)*A})`;ctx.lineWidth=f.w<0?1.5:f.w>=2?.8:1.1;ctx.stroke();
+  if(!reduce){const n=P.length-1;for(let s=0;s<2;s++){const u=((t*.05+f.ph+s*.5)%1)*n,i=Math.floor(u),k=u-i,a=P[i],b=P[Math.min(n,i+1)];if(a[2]<40||b[2]<40)continue;ctx.globalAlpha=A;glowOrb(a[0]+(b[0]-a[0])*k,a[1]+(b[1]-a[1])*k,5,"#FFD08A",.55);ctx.globalAlpha=1}}})
+ const g=proj(...GA);if(g[2]>40){ctx.globalAlpha=A;glowOrb(g[0],g[1],46,"#FFC872",.75);ctx.globalAlpha=1}}
+/* elliptical galaxy glow drawn in its own disk plane */
+function galBlob(c,b,R,col,a,core){const cx=proj(...c);if(cx[2]<40)return null;const pu=proj(c[0]+b[0][0]*R,c[1]+b[0][1]*R,c[2]+b[0][2]*R),pv=proj(c[0]+b[1][0]*R,c[1]+b[1][1]*R,c[2]+b[1][2]*R);
+ let ux=pu[0]-cx[0],uy=pu[1]-cx[1],vx=pv[0]-cx[0],vy=pv[1]-cx[1];const big=Math.max(Math.hypot(ux,uy),Math.hypot(vx,vy)),mn=3+Math.min(14,R/LYPX/1e4);if(big<mn){const k=mn/Math.max(big,1e-6);ux*=k;uy*=k;vx*=k;vy*=k}
+ if(Math.abs(ux*vy-uy*vx)<.8){const nx=-uy,ny=ux,l=Math.hypot(nx,ny)||1;vx=nx/l*.9;vy=ny/l*.9}
+ ctx.save();ctx.transform(ux,uy,vx,vy,cx[0],cx[1]);const g=ctx.createRadialGradient(0,0,0,0,0,1);g.addColorStop(0,hexA("#FFF4E0",a));g.addColorStop(core,hexA(col,a*.55));g.addColorStop(1,hexA(col,0));ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,1,0,Math.PI*2);ctx.fill();ctx.restore();return [cx[0],cx[1],Math.max(Math.hypot(ux,uy),Math.hypot(vx,vy))]}
+let LBL=[];function label(txt,x,y,a,sub){if(!namesOn())return;ctx.font="500 13px 'IBM Plex Sans', system-ui, sans-serif";const w=Math.max(ctx.measureText(txt).width,sub?sub.length*7:0),h=sub?30:16,R=[x-2,y-h/2-2,w+4,h+4];if(LBL.some(o=>R[0]<o[0]+o[2]&&o[0]<R[0]+R[2]&&R[1]<o[1]+o[3]&&o[1]<R[1]+R[3]))return;LBL.push(R);ctx.globalCompositeOperation="source-over";ctx.textAlign="left";ctx.textBaseline="middle";ctx.font="500 13px 'IBM Plex Sans', system-ui, sans-serif";ctx.fillStyle=`rgba(230,236,255,${.85*a})`;ctx.fillText(txt,x,y-(sub?7:0));if(sub){ctx.font="400 11.5px 'IBM Plex Mono', ui-monospace, monospace";ctx.fillStyle=`rgba(154,166,200,${.85*a})`;ctx.fillText(sub,x,y+9)}ctx.globalCompositeOperation="lighter"}
+const fmtLy=ly=>ly>=1e6?(ly/1e6).toLocaleString("ru-RU",{maximumFractionDigits:ly>=1e7?0:1})+" млн св. лет":Math.round(ly/1000).toLocaleString("ru-RU")+" тыс. св. лет";
+function drawDeep(S){ctx.globalCompositeOperation="lighter";LBL=[];if(LV.L>5.2){const o=proj(...S);LBL.push([o[0]-16,o[1]-16,o[0]>0?300:0,32])}
+ if(LV.mw>.01){const r=galBlob(GC,MWB,5e4*LYPX,"#BFD0FF",.85*LV.mw,.25);if(r&&LV.lgLab>.05&&LV.L>12.6)label("Млечный Путь",r[0]+r[2]+8,r[1]+16,LV.mw*LV.lgLab)}
+ if(LV.lg>.01){LG.forEach(g=>{const r=galBlob(g.p,g.b,g.d/2,g.c,.9*LV.lg,.3);if(!r)return;const a=LV.lg*LV.lgLab;if(a>.4)PICK.push({x:r[0],y:r[1],r:Math.max(12,r[2]),id:g.n});
+  if(a>.05)label(g.n,r[0]+Math.max(8,r[2])+4,r[1],a,fmtLy(Math.hypot(...g.p)/LYPX))})}
+ if(LV.lan>.01){const A=LV.lan*(1-.55*LV.nbr),gc=proj(...GA),dimP=showFlow?.3:1;if(showFlow)drawFlows(A,performance.now()/1000);
+  if(gc[2]>40){const R=260*M*LYPX*gc[3];const g=ctx.createRadialGradient(gc[0],gc[1],0,gc[0],gc[1],R);g.addColorStop(0,`rgba(255,190,120,${(showFlow?.16:.10)*A})`);g.addColorStop(.6,showFlow?`rgba(200,140,60,${.06*A})`:`rgba(180,140,255,${.04*A})`);g.addColorStop(1,"rgba(150,120,255,0)");ctx.fillStyle=g;ctx.fillRect(gc[0]-R,gc[1]-R,R*2,R*2)}
+  for(let i=0;i<LAN.length;i++){const p=LAN[i],q=proj(p[0],p[1],p[2]);if(q[2]<40||q[0]<-4||q[0]>W+4||q[1]<-4||q[1]>H+4)continue;ctx.fillStyle=`rgba(${p[3]},${A*dimP*p[4]*.38})`;ctx.fillRect(q[0]-.6,q[1]-.6,1.2,1.2)}
+  for(const k in CL){const q=proj(...CL[k]);if(q[2]<40)continue;ctx.globalAlpha=A;glowOrb(q[0],q[1],k==="Великий аттрактор"?20:12,k==="Скопление Волос Вероники"?"#C8B8FF":"#FFD9A8",.55);ctx.globalAlpha=1;if(A>.4)PICK.push({x:q[0],y:q[1],r:16,id:k});if(A>.3&&LV.L<15.8)label(k,q[0]+14,q[1],A,fmtLy(Math.hypot(...CL[k])/LYPX))}}}
+
+/* ===== observable universe: procedural cosmic web inside a CMB shell (radius 46.5 Gly) ===== */
+const GLY=1e9*LYPX,RU=46.5*GLY;const UBAS=[[],[],[],[],[]];const UCOL=["255,195,110","215,120,255","110,200,255","90,235,205","255,130,175"];const WEB=[];const CMB=[];
+{let seed=301;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647,gs=()=>{let u=0;for(let i=0;i<4;i++)u+=rnd();return (u-2)/1.15};
+ const N=[];while(N.length<640){const u=rnd()*2-1,a=rnd()*Math.PI*2,d=Math.cbrt(rnd())*44;if(d<.7)continue;N.push([Math.sqrt(1-u*u)*Math.cos(a)*d,u*d,Math.sqrt(1-u*u)*Math.sin(a)*d,.5+rnd()])}
+ const E=new Set();N.forEach((p,i)=>{N.map((q,j)=>[j,Math.hypot(p[0]-q[0],p[1]-q[1],p[2]-q[2])]).sort((a,b)=>a[1]-b[1]).slice(1,4).forEach(([j])=>E.add(i<j?i+"_"+j:j+"_"+i))});
+ const col=()=>{const q=rnd();return q<.35?"150,170,255":q<.7?"200,160,255":q<.9?"235,225,255":"255,200,170"};
+ E.forEach(k=>{const [i,j]=k.split("_").map(Number),a=N[i],b=N[j],L=Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]),n=Math.round(10+L*2.2);
+  for(let m=0;m<n;m++){const t=rnd(),w=.25+.75*Math.sin(Math.PI*t);WEB.push([(a[0]+(b[0]-a[0])*t+gs()*.35*w)*GLY,(a[1]+(b[1]-a[1])*t+gs()*.35*w)*GLY,(a[2]+(b[2]-a[2])*t+gs()*.35*w)*GLY,col(),.25+rnd()*.55])}});
+ N.forEach(p=>{const h=Math.floor(p[0]/14+50)*73856093^Math.floor(p[1]/14+50)*19349663^Math.floor(p[2]/14+50)*83492791;p.ci=((h%5)+5)%5});
+ E.forEach(k=>{const [i,j]=k.split("_").map(Number),a=N[i],b=N[j],mid=[(a[0]+b[0])/2+gs()*.4,(a[1]+b[1])/2+gs()*.4,(a[2]+b[2])/2+gs()*.4];
+  [[a,i],[b,j]].forEach(([e,ni])=>{for(let c=0;c<2;c++){const pts=[],bend=[gs()*.5,gs()*.5,gs()*.5];for(let m=0;m<=7;m++){const t=m/7,w=Math.sin(Math.PI*t);pts.push([(mid[0]+(e[0]-mid[0])*t+bend[0]*w+gs()*.05)*GLY,(mid[1]+(e[1]-mid[1])*t+bend[1]*w+gs()*.05)*GLY,(mid[2]+(e[2]-mid[2])*t+bend[2]*w+gs()*.05)*GLY])}UBAS[N[ni].ci].push(pts)}})});
+ N.forEach(p=>{for(let m=0;m<Math.round(10*p[3]);m++)WEB.push([(p[0]+gs()*.45)*GLY,(p[1]+gs()*.45)*GLY,(p[2]+gs()*.45)*GLY,"255,235,220",.4+rnd()*.6])});
+ /* CMB: points on the shell, coloured by 3D noise like the Planck map */
+ const CR=[[0,[30,60,200]],[.35,[60,140,240]],[.5,[230,230,200]],[.65,[250,170,60]],[1,[220,60,40]]];const cr=v=>{v=Math.max(0,Math.min(1,v));for(let i=1;i<CR.length;i++)if(v<=CR[i][0]){const [a,ca]=CR[i-1],[b,cb]=CR[i],k=(v-a)/(b-a);return ca.map((c,m)=>Math.round(c+(cb[m]-c)*k)).join(",")}};
+ for(let i=0;i<9000;i++){const u=rnd()*2-1,a=rnd()*Math.PI*2,x=Math.sqrt(1-u*u)*Math.cos(a),y=u,z=Math.sqrt(1-u*u)*Math.sin(a);const v=.5*vn(x*3+9,y*3,z*3)+.3*vn(x*7,y*7+4,z*7)+.2*vn(x*15,y*15,z*15+2);CMB.push([x*RU,y*RU,z*RU,cr((v-.5)*2.4+.5)])}}
+
+/* ===== neighbouring basins of attraction around Laniakea (centres at catalogue distances; branches modelled) ===== */
+const NB=[{n:"Сверхскопление Шепли",c:[-590,270,-45],col:"215,120,255",len:[220,380],mains:10},{n:"Персей–Рыбы",c:[240,-50,-50],col:"110,200,255",len:[120,220],mains:8},
+ {n:"Сверхскопление Волос Вероники",c:[0,316,44],col:"90,235,205",len:[100,190],mains:7},{n:"Сверхскопление Геркулеса",c:[-60,380,300],col:"255,130,175",len:[120,210],mains:7}];
+NB.forEach(b=>b.c=b.c.map(v=>v*M*LYPX));
+{const MP=M*LYPX,roots=[GA,...NB.map(b=>b.c)];let seed=413;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+ const norm=v=>{const l=Math.hypot(...v)||1;return v.map(x=>x/l)},add3=(a,b,k=1)=>[a[0]+b[0]*k,a[1]+b[1]*k,a[2]+b[2]*k],dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
+ const turn=(d,amt)=>norm([d[0]+(rnd()*2-1)*amt,d[1]+(rnd()*2-1)*amt*.6,d[2]+(rnd()*2-1)*amt]);
+ NB.forEach((b,bi)=>{const own=roots[bi+1],others=roots.filter((_,j)=>j!==bi+1),B=[];
+  /* stop growing at the watershed: when another attractor is nearer than our own */
+  const inside=p=>others.every(o=>dist(p,o)>dist(p,own)*1.05);
+  function grow(start,dir,len,parent,at,depth){const n=18,pts=[start];let d=dir,p=start;for(let i=1;i<=n;i++){d=turn(d,.2);const q=add3(p,d,len/n);if(!inside(q))break;p=q;pts.push(p)}
+   if(pts.length<3)return;const id=B.length;B.push({pts,parent,at,depth});
+   if(depth<2){for(let k=0;k<(depth?3:4);k++){const j=3+Math.floor(rnd()*(pts.length-4));if(j>=pts.length)continue;grow(pts[j],turn(norm(add3(d,turn(dir,1.4),1)),.6),len*(.4+rnd()*.3),id,j,depth+1)}}}
+  for(let k=0;k<b.mains;k++){const u=rnd()*2-1,a=rnd()*Math.PI*2;grow(own,[Math.sqrt(1-u*u)*Math.cos(a),u*.6,Math.sqrt(1-u*u)*Math.sin(a)],(b.len[0]+rnd()*(b.len[1]-b.len[0]))*MP,-1,0,0)}
+  b.lines=[];B.forEach((br,i)=>{const line=[];let cur=i,from=br.pts.length-1;while(cur>=0){const pb=B[cur];for(let m=from;m>=0;m--)line.push(pb.pts[m]);from=pb.at;cur=pb.parent}
+   for(let c=0;c<2;c++){const off=[rnd()*2-1,(rnd()*2-1)*.6,rnd()*2-1],sp=(5+rnd()*7)*MP,n=line.length;b.lines.push({p:line.map((q,m)=>add3(q,off,sp*(1-m/(n-1)))),ph:rnd()})}})})}
+/* procedural basins over the whole cosmic web: every filament drains from its middle toward both end nodes */
+function drawNeighbours(A,t){ctx.globalCompositeOperation="lighter";ctx.lineCap="round";
+ NB.forEach(b=>{ctx.beginPath();const P=b.lines.map(l=>l.p.map(q=>proj(...q)));P.forEach(pp=>{let ok=false;pp.forEach(q=>{if(q[2]<40){ok=false;return}ok?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]);ok=true})});
+  ctx.strokeStyle=`rgba(${b.col},${.16*A})`;ctx.lineWidth=1;ctx.stroke();
+  if(!reduce)P.forEach((pp,i)=>{const n=pp.length-1,u=((t*.05+b.lines[i].ph)%1)*n,k=Math.floor(u),a=pp[k],c=pp[Math.min(n,k+1)];if(a[2]<40||c[2]<40)return;const f=u-k;ctx.fillStyle=`rgba(${b.col},${.7*A})`;ctx.fillRect(a[0]+(c[0]-a[0])*f-1,a[1]+(c[1]-a[1])*f-1,2,2)});
+  const q=proj(...b.c);if(q[2]<40)return;ctx.globalAlpha=A;glowOrb(q[0],q[1],30,"#"+b.col.split(",").map(v=>(+v).toString(16).padStart(2,"0")).join(""),.7);ctx.globalAlpha=1;
+  if(A>.4)PICK.push({x:q[0],y:q[1],r:18,id:b.n});if(A>.3)label(b.n,q[0]+16,q[1],A,fmtLy(Math.hypot(...b.c)/LYPX))});
+ const g=proj(...GA);if(g[2]>40&&A>.3){if(A>.4)PICK.push({x:g[0],y:g[1],r:18,id:"Ланиакея"});label("Ланиакея",g[0]+16,g[1],A,"≈520 млн св. лет в поперечнике")}}
+function drawWebBasins(S,A){ctx.globalCompositeOperation="lighter";ctx.lineCap="round";ctx.lineWidth=.8;
+ UBAS.forEach((list,ci)=>{ctx.beginPath();list.forEach(pp=>{let ok=false;for(let m=0;m<pp.length;m++){const p=pp[m],q=proj(S[0]+p[0],S[1]+p[1],S[2]+p[2]);if(q[2]<40){ok=false;continue}ok?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]);ok=true}});ctx.strokeStyle=`rgba(${UCOL[ci]},${.3*A})`;ctx.stroke()})}
+function drawUniverse(S){ctx.globalCompositeOperation="lighter";
+ if(LV.nbr>.01&&showFlow)drawNeighbours(LV.nbr,performance.now()/1000);
+ if(LV.web>.01&&showFlow)drawWebBasins(S,LV.web*(1-.4*LV.cmb));
+ if(LV.web>.01){const A=LV.web*(1-.35*LV.cmb);for(let i=0;i<WEB.length;i++){const p=WEB[i],q=proj(S[0]+p[0],S[1]+p[1],S[2]+p[2]);if(q[2]<40||q[0]<-4||q[0]>W+4||q[1]<-4||q[1]>H+4)continue;ctx.fillStyle=`rgba(${p[3]},${A*p[4]*.5})`;ctx.fillRect(q[0]-.65,q[1]-.65,1.3,1.3)}}
+ if(LV.cmb>.01){const A=LV.cmb,c=proj(...S),R=RU*c[3];
+  for(let i=0;i<CMB.length;i++){const p=CMB[i],q=proj(S[0]+p[0],S[1]+p[1],S[2]+p[2]);if(q[2]<40)continue;const back=q[2]>c[2];ctx.fillStyle=`rgba(${p[3]},${A*(back?.22:.5)})`;ctx.fillRect(q[0]-1.1,q[1]-1.1,2.2,2.2)}
+  if(c[2]>40){const g=ctx.createRadialGradient(c[0],c[1],R*.9,c[0],c[1],R*1.08);g.addColorStop(0,"rgba(255,170,90,0)");g.addColorStop(.55,`rgba(255,170,90,${.22*A})`);g.addColorStop(1,"rgba(255,140,70,0)");ctx.fillStyle=g;ctx.beginPath();ctx.arc(c[0],c[1],R*1.08,0,Math.PI*2);ctx.fill();
+   if(A>.4)PICK.push({x:c[0],y:c[1]-R,r:22,id:"Реликтовое излучение"});if(A>.3)label("Реликтовое излучение · край видимого",c[0]+10,c[1]-R-16,A,"46,5 млрд св. лет")}}
+ if(LV.web>.4&&LV.cmb<.5){const o=proj(...S);PICK.push({x:o[0],y:o[1],r:18,id:"Наблюдаемая Вселенная"})}}
+
+/* ===== volumetric light ===== */
+/* sun rays: occlusion mask (sun plasma + black planet discs) radially smeared from the sun's screen position */
+const RA=document.createElement("canvas"),rax=RA.getContext("2d"),RB2=document.createElement("canvas"),rbx=RB2.getContext("2d");
+function sunRays(k,t){if(!glowOn||k<.02||!SUNSCR)return;const q=4,w=Math.max(1,Math.round(W/q)),h=Math.max(1,Math.round(H/q));[RA,RB2].forEach(c=>{if(c.width!==w||c.height!==h){c.width=w;c.height=h}});
+ const sx=SUNSCR.x/q,sy=SUNSCR.y/q,sr=Math.max(SUNSCR.R,14)/q;
+ if(rayFrame++%(+$("#fps").textContent<40?2:1)===0){
+  rax.globalCompositeOperation="source-over";rax.globalAlpha=1;rax.fillStyle="#000";rax.fillRect(0,0,w,h);
+  rax.globalCompositeOperation="lighter";const g=rax.createRadialGradient(sx,sy,0,sx,sy,sr*2.2);g.addColorStop(0,"rgba(255,225,170,1)");g.addColorStop(.45,"rgba(255,170,80,.55)");g.addColorStop(1,"rgba(255,120,40,0)");rax.fillStyle=g;rax.fillRect(sx-sr*2.2,sy-sr*2.2,sr*4.4,sr*4.4);
+  rax.drawImage(pcv,sx-sr*1.15,sy-sr*1.15,sr*2.3,sr*2.3);
+  /* planets in front of the sun cast shadow shafts */
+  rax.globalCompositeOperation="source-over";rax.fillStyle="#000";PSCR.forEach(([x,y,r,z])=>{rax.beginPath();rax.arc(x/q,y/q,Math.max(1.2,r*2.4/q),0,Math.PI*2);rax.fill()});
+  /* radial smear: each pass doubles the streak length (ping-pong) */
+  let src=RA,dst=RB2,sxc=rax,dxc=rbx;[1.06,1.12,1.25,1.5,1.9].forEach(f=>{dxc.globalCompositeOperation="copy";dxc.globalAlpha=1;dxc.drawImage(src,0,0);dxc.globalCompositeOperation="lighter";dxc.globalAlpha=.62;
+   dxc.drawImage(src,sx-sx*f,sy-sy*f,w*f,h*f);[src,dst]=[dst,src];[sxc,dxc]=[dxc,sxc]});
+  RA._out=src}
+ const out=RA._out||RA;ctx.globalCompositeOperation="lighter";ctx.globalAlpha=Math.min(1,.85*k);ctx.drawImage(out,0,0,W,H);ctx.globalAlpha=1}
+/* Milky Way: soft disk haze in the galactic plane + dark dust lanes on the inner side of the arms */
+const DUST=[];{let seed=77;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647,gs=()=>{let u=0;for(let i=0;i<4;i++)u+=rnd();return (u-2)/1.15};const B=Math.tan(12*Math.PI/180),bar=27*Math.PI/180;
+ for(let k=0;k<4;k++)for(let i=0;i<1500;i++){const th=.6+rnd()*12.4,rr=3000*Math.exp(B*th),ph=th+k*Math.PI/2+bar-.09+gs()*.04,R=rr*(1+gs()*.03);DUST.push([GC[0]+Math.cos(ph)*R*LYPX,GC[1]+gs()*100*LYPX,GC[2]+Math.sin(ph)*R*LYPX,(110+rnd()*200)*LYPX,.07+rnd()*.09])}}
+function galaxyVolume(A){if(!glowOn||A<.02)return;
+ galBlob(GC,MWB,3.2e4*LYPX,"#7F8FD8",.32*A,.22);galBlob(GC,MWB,1.1e4*LYPX,"#FFD9A8",.38*A,.3);
+ ctx.globalCompositeOperation="source-over";for(let i=0;i<DUST.length;i++){const d=DUST[i],q=proj(d[0],d[1],d[2]);if(q[2]<40||q[0]<-12||q[0]>W+12||q[1]<-12||q[1]>H+12)continue;const r=Math.max(.8,Math.min(7,d[3]*q[3]));ctx.fillStyle=`rgba(6,7,14,${d[4]*A})`;ctx.beginPath();ctx.arc(q[0],q[1],r,0,Math.PI*2);ctx.fill()}
+ ctx.globalCompositeOperation="lighter"}
+/* bloom: blur a quarter-size copy of the frame and add it back */
+let glowOn=true;const BC=document.createElement("canvas"),bctx=BC.getContext("2d");
+function bloom(k){if(!glowOn||k<.02)return;const bw=Math.max(1,Math.round(W/4)),bh=Math.max(1,Math.round(H/4));if(BC.width!==bw||BC.height!==bh){BC.width=bw;BC.height=bh}
+ bctx.globalCompositeOperation="copy";bctx.filter="contrast(2.4) brightness(1.1) blur(3px)";bctx.drawImage(cv,0,0,cv.width,cv.height,0,0,bw,bh);bctx.filter="none";
+ ctx.globalCompositeOperation="lighter";ctx.globalAlpha=k*.7;ctx.drawImage(BC,0,0,W,H);ctx.globalAlpha=k*.35;ctx.drawImage(BC,-W*.02,-H*.02,W*1.04,H*1.04);ctx.globalAlpha=1}
+function niceScale(){const world=130*cam.dist/FOC,au=world/60;let v,u,k;
+ if(au<20000){v=au;u="а.е.";k=1}else{const ly=au/63241;if(ly<1000){v=ly;u="св. лет"}else if(ly<1e6){v=ly/1000;u="тыс. св. лет"}else if(ly<1e9){v=ly/1e6;u="млн св. лет"}else{v=ly/1e9;u="млрд св. лет"}}
+ const e=Math.pow(10,Math.floor(Math.log10(v))),m=v/e,n=m>=5?5:m>=2?2:1,val=n*e;$("#sbar").style.width=(130*val/v).toFixed(1)+"px";
+ $("#slab").textContent=(val<1?val.toLocaleString("ru-RU",{maximumFractionDigits:3}):val.toLocaleString("ru-RU"))+" "+u}
+function levelName(){const L=LV.L;return L<4.9?"Солнечная система":L<6.2?"Межзвёздное пространство":L<9.4?"Ближайшие звёзды":L<10.4?"Окрестности Солнца":L<12.4?"Млечный Путь":L<14.4?"Местная группа":L<15.75?"Ланиакея":L<16.5?"Соседи Ланиакеи":L<17.15?"Космическая паутина":"Наблюдаемая Вселенная"}
+function resize(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+"px";cv.style.height=H+"px";FOC=Math.min(W,H)*.95}
+const spd=$("#spd");const yps=()=>{const v=+spd.value;return v===0?0:.02*Math.pow(10,v/33)};/* years per second, ~0.02 … 20 */
+function fmtSpd(){const y=yps();$("#spdv").textContent=y===0?"пауза":y<1?`${(y*12).toFixed(1)} мес/с`:`${y.toFixed(1)} лет/с`}
+let t0=performance.now(),lastT=t0,lastUser=0;
+let PSCR=[],SUNSCR=null,rayFrame=0,PICK=[],hoverId=null,selId=null,fpsN=0,fpsT=0;
+function frame(now){PICK=[];PSCR=[];SUNSCR=null;fpsN++;if(now-fpsT>500){$("#fps").textContent=Math.round(fpsN*1000/(now-fpsT));fpsN=0;fpsT=now}const t=(now-t0)/1000,dt=Math.min(.05,(now-lastT)/1000);lastT=now;
+ if(!reduce||true)simT+=dt*yps()*(reduce?.35:1);sampleTrails();audioTick(t);
+ journeyTick(dt);
+ {const e=1-Math.pow(.002,dt);cam.dist=Math.exp(Math.log(cam.dist)+(Math.log(cam.gd)-Math.log(cam.dist))*e)}levels();if(!J&&!reduce&&!drag&&now-lastUser>3000)cam.yaw+=dt*.03;
+ const S=sunPos(simT);{const k=1-LV.tu,a=LV.tg*(1-LV.tl)*k,b=LV.tl*k;cam.tgt=[S[0]+GC[0]*a+GA[0]*b,S[1]+GC[1]*a+GA[1]*b,S[2]+GC[2]*a+GA[2]*b]}camPrep();
+ ctx.setTransform(DPR,0,0,DPR,0,0);ctx.globalCompositeOperation="source-over";
+ if(!warpPre()){const bg=ctx.createRadialGradient(W*.5,H*.45,0,W*.5,H*.45,Math.max(W,H)*.8);bg.addColorStop(0,"#0B1024");bg.addColorStop(.55,"#05070F");bg.addColorStop(1,"#020306");ctx.fillStyle=bg;ctx.fillRect(0,0,W,H)}
+ ctx.globalCompositeOperation="lighter";
+if(LV.sys>.02){ctx.globalAlpha=LV.sys; STARS.forEach(([x,y,z,b,big])=>{const q=proj(wrap(x,S[0]),y,z);if(q[2]<40)return;const a=b*Math.min(1,q[3]*3);ctx.fillStyle=`rgba(200,214,255,${a*.8})`;const r=(big?1.6:.9)*Math.min(1.5,Math.max(.5,q[3]*2));ctx.fillRect(q[0]-r/2,q[1]-r/2,r,r)});
+ drawFlightArrow();
+ if(showRings)PL.forEach(drawRing);
+ if(showTr)PL.forEach(drawTrail);
+ const sp=proj(...S);const items=PL.map(p=>{const q=proj(...planetPos(p,simT));return [q[2],p,q]});items.push([sp[2],null,sp]);items.sort((a,b)=>b[0]-a[0]);
+ items.forEach(([,p,q])=>p?drawPlanet(p,q):drawSun(q,t));ctx.globalAlpha=1}
+ drawCosmos(S);drawDeep(S);drawUniverse(S);sunRays(LV.sys*.6*(1-jumpK),t);warpGrab();bloom(Math.max(LV.bloom*.85,jumpK*.55));warpPost(dt);
+ ctx.globalCompositeOperation="source-over";[[selId,.9,1.6],[hoverId,.55,1]].forEach(([id,a,w])=>{if(!id)return;const k=PICK.find(o=>o.id===id);if(!k)return;ctx.strokeStyle=`rgba(255,194,102,${a})`;ctx.lineWidth=w;ctx.beginPath();ctx.arc(k.x,k.y,k.r+3,0,Math.PI*2);ctx.stroke()});
+ const v=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.35,W/2,H/2,Math.max(W,H)*.75);v.addColorStop(0,"rgba(0,0,0,0)");v.addColorStop(1,"rgba(0,0,0,.55)");ctx.fillStyle=v;ctx.fillRect(0,0,W,H);
+ niceScale();{const ln=levelName(),el=$("#level");if(el.textContent!==ln)el.textContent=ln}
+ $("#yr").textContent=simT<2?`${(simT*12).toFixed(0)} мес`:`${simT.toFixed(simT<100?1:0)} лет`;
+ $("#dist").textContent=moving?`${Math.round(simT*48.5).toLocaleString("ru-RU")} а.е.`:"стоит";/* real: 230 km/s ≈ 48.5 AU per year */
+ $("#orb").textContent=Math.floor(simT).toLocaleString("ru-RU");
+ requestAnimationFrame(frame)}
+
+/* interaction */
+let drag=null,pinch=null,moved=false;const ptrs=new Map();const zoom=d=>{cam.gd=Math.max(300,Math.min(1.5e18,d))};
+cv.addEventListener("pointerdown",e=>{if(J){endJourney();return}cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});lastUser=performance.now();
+ if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),gd:cam.gd};drag=null;return}
+ moved=false;drag={x:e.clientX,y:e.clientY,yaw:cam.yaw,pitch:cam.pitch};cv.classList.add("drag")});
+cv.addEventListener("pointermove",e=>{if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(pinch&&ptrs.size===2){const [a,b]=[...ptrs.values()];zoom(pinch.gd*pinch.d/Math.hypot(a.x-b.x,a.y-b.y));lastUser=performance.now();return}
+ if(!drag){const k=pickAt(e.clientX,e.clientY);hoverId=k?k.id:null;cv.classList.toggle("hover",!!k)}
+ if(drag&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>4)moved=true;
+ if(drag){cam.yaw=drag.yaw+(e.clientX-drag.x)*.006;cam.pitch=Math.max(-1.45,Math.min(1.45,drag.pitch-(e.clientY-drag.y)*.006));lastUser=performance.now()}});
+const up=e=>{if(drag&&!moved&&e.type==="pointerup"){const k=pickAt(e.clientX,e.clientY);k?openInfo(k.id):closeInfo()}ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;drag=null;cv.classList.remove("drag")};
+cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);
+cv.addEventListener("wheel",e=>{e.preventDefault();if(J)endJourney();lastUser=performance.now();zoom(cam.gd*Math.exp(e.deltaY*(Math.log10(cam.gd)>4.3?.004:.0012)))},{passive:false});
+
+function tog(id,fn){const b=$(id);b.addEventListener("click",()=>{const on=b.getAttribute("aria-pressed")!=="true";b.setAttribute("aria-pressed",on);fn(on)})}
+tog("#move",on=>{moving=on;resetTrails()});tog("#scale",on=>{realScale=on;resetTrails();cam.gd=on?2600:1500});tog("#flows",on=>showFlow=on);tog("#glow",on=>glowOn=on);tog("#trails",on=>showTr=on);tog("#rings",on=>showRings=on);tog("#names",on=>showNames=on);
+let side=false;$("#view").addEventListener("click",()=>{side=!side;cam.yaw=0;cam.pitch=side?-.05:-1.25;$("#view").textContent=side?"Вид сверху":"Вид сбоку";lastUser=performance.now()});
+$("#reset").addEventListener("click",()=>{simT=0;resetTrails();cam.yaw=-.9;cam.pitch=-.32;cam.gd=realScale?2600:1500});
+
+/* ===== sound: sun drone + planet voices pitched by real orbital period + chime per orbit ===== */
+let AC=null,master=null,droneGain=null,voices=[],sndOn=false;
+/* minor pentatonic over A; pitch from period: f ∝ (1/P)^0.35, snapped to nearest scale note */
+const SCALE=[0,3,5,7,10];
+function snap(f){const m=69+12*Math.log2(f/440);let best=m,bd=99;for(let o=-2;o<9;o++)for(const k of SCALE){const n=57+12*o+k-12,d=Math.abs(n-m);if(d<bd){bd=d;best=n}}return 440*Math.pow(2,(best-69)/12)}
+const pitch=p=>snap(660*Math.pow(.241/p.P,.35));
+function audioInit(){AC=new (window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.gain.value=0;
+ const comp=AC.createDynamicsCompressor();master.connect(comp);comp.connect(AC.destination);
+ /* echo space */
+ const dl=AC.createDelay(2),fb=AC.createGain(),wet=AC.createGain(),lp=AC.createBiquadFilter();dl.delayTime.value=.42;fb.gain.value=.45;wet.gain.value=.35;lp.type="lowpass";lp.frequency.value=2200;
+ dl.connect(lp);lp.connect(fb);fb.connect(dl);lp.connect(wet);wet.connect(master);AC.space=dl;
+ /* drone */
+ droneGain=AC.createGain();droneGain.gain.value=.22;const dlp=AC.createBiquadFilter();dlp.type="lowpass";dlp.frequency.value=320;dlp.Q.value=4;droneGain.connect(dlp);dlp.connect(master);AC.dlp=dlp;
+ [55,55.4,82.4,110.2,54.7].forEach((fq,i)=>{const o=AC.createOscillator();o.type=i<2?"sawtooth":"sine";o.frequency.value=fq;const g=AC.createGain();g.gain.value=i<2?.18:.3;o.connect(g);g.connect(droneGain);o.start()});
+ const len=AC.sampleRate*3,buf=AC.createBuffer(1,len,AC.sampleRate),d=buf.getChannelData(0);let last=0;for(let i=0;i<len;i++){last=(last+.02*(Math.random()*2-1))/1.02;d[i]=last*3.5}
+ const ns=AC.createBufferSource();ns.buffer=buf;ns.loop=true;const nbp=AC.createBiquadFilter();nbp.type="bandpass";nbp.frequency.value=180;nbp.Q.value=.7;const ng=AC.createGain();ng.gain.value=.5;ns.connect(nbp);nbp.connect(ng);ng.connect(droneGain);ns.start();
+ /* galaxy: very low pad that rises when zoomed out */
+ {const gg=AC.createGain();gg.gain.value=0;const glp=AC.createBiquadFilter();glp.type="lowpass";glp.frequency.value=140;gg.connect(glp);glp.connect(master);AC.galG=gg;[41.2,41.5,61.7,82.6].forEach((fq,i)=>{const o=AC.createOscillator();o.type=i<2?"triangle":"sine";o.frequency.value=fq;const g=AC.createGain();g.gain.value=.25;o.connect(g);g.connect(gg);o.start()})}
+ /* planet voices */
+ voices=PL.map((p,i)=>{const o=AC.createOscillator();o.type="sine";o.frequency.value=pitch(p);const g=AC.createGain();g.gain.value=0;const pan=AC.createStereoPanner?AC.createStereoPanner():null;
+  o.connect(g);if(pan){g.connect(pan);pan.connect(master);pan.connect(AC.space)}else{g.connect(master)}o.start();return {g,pan,f:pitch(p),lastOrb:null}})}
+function chime(f,pan){const t=AC.currentTime,o=AC.createOscillator(),o2=AC.createOscillator(),g=AC.createGain();o.type="sine";o2.type="sine";o.frequency.value=f*2;o2.frequency.value=f*5.04;
+ const g2=AC.createGain();g2.gain.value=.25;o2.connect(g2);g2.connect(g);o.connect(g);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.09,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+2.4);
+ let out=g;if(AC.createStereoPanner){const p=AC.createStereoPanner();p.pan.value=pan;g.connect(p);out=p}out.connect(master);out.connect(AC.space);o.start(t);o2.start(t);o.stop(t+2.5);o2.stop(t+2.5)}
+const volume=()=>+$("#vol").value/100;
+let chimesThisSec=0,chimeWin=0;
+function audioTick(t){if(!AC||!sndOn)return;const now=AC.currentTime,rate=yps();
+ droneGain.gain.setTargetAtTime((.2+.04*Math.sin(t*1.1))*(.25+.75*LV.sys),now,.3);if(AC.galG)AC.galG.gain.setTargetAtTime(.35*LV.gal*(1-.55*Math.max(LV.lan,LV.web))*(1-.5*LV.cmb),now,.8);AC.dlp.frequency.setTargetAtTime(260+90*Math.sin(t*.13)+Math.min(400,rate*30),now,.5);
+ if(now-chimeWin>1){chimeWin=now;chimesThisSec=0}
+ PL.forEach((p,i)=>{const v=voices[i],S=sunPos(simT),q=planetPos(p,simT),side=((q[2]-S[2])/RAD(p))||0;
+  v.g.gain.setTargetAtTime((rate===0?.004:.012+.006*(1-i/8))*LV.sys,now,.4);if(v.pan)v.pan.pan.setTargetAtTime(Math.max(-1,Math.min(1,side*.8)),now,.2);
+  const orb=Math.floor((simT+p.ph/(2*Math.PI)*p.P)/p.P);if(v.lastOrb!==null&&orb!==v.lastOrb&&chimesThisSec<6&&LV.sys>.3){chime(v.f,side*.8);chimesThisSec++}v.lastOrb=orb})}
+function setSound(on){if(on&&!AC)audioInit();if(!AC)return;sndOn=on;if(on)AC.resume();master.gain.setTargetAtTime(on?.55*volume():0,AC.currentTime,.6)}
+$("#vol").addEventListener("input",()=>{if(AC&&sndOn)master.gain.setTargetAtTime(.55*volume(),AC.currentTime,.1)});
+tog("#snd",setSound);
+document.querySelectorAll("[data-fly]").forEach(b=>b.addEventListener("click",()=>{const k=b.dataset.fly;lastUser=performance.now();
+ if(k==="sys"){cam.gd=realScale?2600:1500;cam.pitch=-.32}else if(k==="nb"){cam.gd=32*LYPX;cam.pitch=-.35}else if(k==="gal"){cam.gd=1.5e5*LYPX;cam.pitch=-1.05}else if(k==="lg"){cam.gd=9e6*LYPX;cam.pitch=-.6}else if(k==="uni"){cam.gd=1.9e11*LYPX;cam.pitch=-.3}else{cam.gd=8e8*LYPX;cam.pitch=-.45}}));
+spd.addEventListener("input",fmtSpd);fmtSpd();
+
+
+/* ===== journey: smooth log-zoom out through every level, pause, then a 2 s hyperjump home ===== */
+const JSTOPS=[[2.65,1.6,"Земля и Солнце","орбиты внутренних планет"],[3.75,2,"Солнечная система","8 планет · 60 а.е."],[7.9,2.2,"Ближайшие звёзды","Альфа Центавра — 4,2 св. года"],[11.35,2.4,"Млечный Путь","≈100 тыс. св. лет · 200 млрд звёзд"],[13.75,2.2,"Местная группа","Андромеда — 2,5 млн св. лет"],[15.45,2.6,"Ланиакея","≈520 млн св. лет · 100 000 галактик"],[15.88,2.6,"Соседи Ланиакеи","у каждого бассейна свой центр притяжения"],[16.85,2.4,"Космическая паутина","сотни бассейнов вдоль нитей"],[17.72,2.6,"Наблюдаемая Вселенная","радиус 46,5 млрд св. лет"]];
+const SEC_PER_DECADE=2.1;let J=null;
+function buildTimeline(){const T=[];JSTOPS.forEach((st,i)=>{if(i>0){const a=JSTOPS[i-1][0];T.push({k:"move",a,b:st[0],d:(st[0]-a)*SEC_PER_DECADE})}T.push({k:"hold",a:st[0],b:st[0],d:st[1],title:st[2],sub:st[3]})});
+ T.push({k:"pause",a:17.72,b:17.72,d:1.8});T.push({k:"jump",a:17.72,b:Math.log10(realScale?2200:1300),d:2.1});T.push({k:"arrive",a:0,b:0,d:.9});return T}
+const pitchFor=L=>-.35-.65*sm(10.3,11.2,L)*(1-sm(12.4,13.1,L));
+function showTitle(t,sub){const b=$("#bigt");b.innerHTML="";b.textContent=t;if(sub){const s=document.createElement("small");s.textContent=sub;b.append(s)}b.classList.add("on")}
+function hideTitle(){$("#bigt").classList.remove("on")}
+function startJourney(){closeInfo();J={T:buildTimeline(),i:0,el:0,shown:-1};document.body.classList.add("journey");const L=JSTOPS[0][0];cam.dist=cam.gd=Math.pow(10,L);cam.pitch=pitchFor(L);WS.forEach(w=>w.r=0)}
+function endJourney(){if(!J)return;J=null;document.body.classList.remove("journey");hideTitle();cam.gd=cam.dist;$("#flash").style.opacity=0;lastUser=performance.now()}
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+/* warp streaks */
+const WS=[];for(let i=0;i<260;i++)WS.push({a:Math.random()*Math.PI*2,r:0,s:.4+Math.random()*.9,c:Math.random()<.25?"190,210,255":Math.random()<.5?"255,220,170":"255,255,255"});
+const FB=document.createElement("canvas"),fbx=FB.getContext("2d");
+let jumpK=0;/* 0..1 strength of the warp this frame */
+function journeyTick(dt){if(!J)return;J.el+=dt;let it=J.T[J.i];while(it&&J.el>it.d){J.el-=it.d;J.i++;it=J.T[J.i]}
+ if(!it){endJourney();return}
+ const u=Math.min(1,J.el/it.d);jumpK=0;
+ if(it.k==="hold"){if(J.shown!==J.i){showTitle(it.title,it.sub);J.shown=J.i}cam.dist=cam.gd=Math.pow(10,it.a)}
+ else{if(J.shown>=0&&it.k!=="hold"){hideTitle();J.shown=-1}}
+ if(it.k==="move"){const L=it.a+(it.b-it.a)*ease(u);cam.dist=cam.gd=Math.pow(10,L)}
+ if(it.k==="pause"){cam.dist=cam.gd=Math.pow(10,it.a)}
+ if(it.k==="jump"||it.k==="arrive")J.noLbl=true;
+ if(it.k==="jump"){const e=Math.pow(u,2.2),L=it.a+(it.b-it.a)*e;cam.dist=cam.gd=Math.pow(10,L);jumpK=Math.sin(Math.PI*Math.min(1,u*1.05))*.6+u*.5;
+  if(!J.whoosh){J.whoosh=1;whoosh()}}
+ if(it.k==="arrive"){if(!J.boom){J.boom=1;boom();$("#flash").style.opacity=.85}$("#flash").style.opacity=(.85*(1-u)).toFixed(3);cam.dist=cam.gd=Math.pow(10,J.T[J.i-1].b)}
+ if(it.k!=="jump"&&it.k!=="arrive")cam.yaw+=dt*.05;
+ if(it.k!=="arrive")cam.pitch+=(pitchFor(Math.log10(cam.dist))-cam.pitch)*Math.min(1,dt*1.5)}
+/* before the scene: keep a stretched copy of the last frame to smear motion */
+function warpPre(){if(jumpK<=0)return false;if(FB.width!==cv.width||FB.height!==cv.height){FB.width=cv.width;FB.height=cv.height}
+ const z=1+.07*jumpK;ctx.globalCompositeOperation="source-over";ctx.fillStyle="#020306";ctx.fillRect(0,0,W,H);ctx.globalAlpha=.62;ctx.drawImage(FB,W/2-W*z/2,H/2-H*z/2,W*z,H*z);ctx.globalAlpha=1;
+ ctx.fillStyle=`rgba(2,3,6,${.18-.1*jumpK})`;ctx.fillRect(0,0,W,H);return true}
+function warpGrab(){if(jumpK<=0)return;if(FB.width!==cv.width||FB.height!==cv.height){FB.width=cv.width;FB.height=cv.height}fbx.globalCompositeOperation="copy";fbx.drawImage(cv,0,0)}
+function warpPost(dt){if(jumpK<=0)return;ctx.globalCompositeOperation="lighter";const cx=W/2,cy=H/2,M=Math.hypot(W,H)/2;ctx.lineCap="round";
+ WS.forEach(w=>{w.r+=dt*w.s*(80+900*jumpK*jumpK);if(w.r>M||w.r===0){w.r=4+Math.random()*M*.3;w.a=Math.random()*Math.PI*2}const len=w.r*(.08+.6*jumpK),c=Math.cos(w.a),sn=Math.sin(w.a);
+  const g=ctx.createLinearGradient(cx+c*(w.r-len),cy+sn*(w.r-len),cx+c*w.r,cy+sn*w.r);g.addColorStop(0,`rgba(${w.c},0)`);g.addColorStop(1,`rgba(${w.c},${.75*jumpK})`);ctx.strokeStyle=g;ctx.lineWidth=.6+1.6*jumpK*(w.r/M);ctx.beginPath();ctx.moveTo(cx+c*(w.r-len),cy+sn*(w.r-len));ctx.lineTo(cx+c*w.r,cy+sn*w.r);ctx.stroke()});
+ /* chromatic split on the edges: two tinted, offset copies of the blurred frame */
+ if(BC.width>1){const o=6*jumpK;ctx.globalAlpha=.14*jumpK;ctx.filter="sepia(1) saturate(6) hue-rotate(-40deg)";ctx.drawImage(BC,-o,0,W+o*2,H);ctx.filter="sepia(1) saturate(6) hue-rotate(170deg)";ctx.drawImage(BC,o*.5,-o*.5,W-o,H+o);ctx.filter="none";ctx.globalAlpha=1}
+ const vg=ctx.createRadialGradient(cx,cy,M*.15,cx,cy,M);vg.addColorStop(0,`rgba(255,240,220,${.10*jumpK})`);vg.addColorStop(1,"rgba(0,0,0,0)");ctx.fillStyle=vg;ctx.fillRect(0,0,W,H)}
+/* sound for the jump */
+function whoosh(){if(!AC||!sndOn)return;const t=AC.currentTime,d=2.1,len=AC.sampleRate*d,b=AC.createBuffer(1,len,AC.sampleRate),x=b.getChannelData(0);for(let i=0;i<len;i++)x[i]=Math.random()*2-1;
+ const s=AC.createBufferSource();s.buffer=b;const f=AC.createBiquadFilter();f.type="bandpass";f.Q.value=1.4;f.frequency.setValueAtTime(160,t);f.frequency.exponentialRampToValueAtTime(5200,t+d);
+ const g=AC.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.55,t+d*.92);g.gain.exponentialRampToValueAtTime(.0001,t+d+.05);s.connect(f);f.connect(g);g.connect(master);s.start(t);s.stop(t+d+.1);
+ const o=AC.createOscillator(),og=AC.createGain();o.type="sawtooth";o.frequency.setValueAtTime(40,t);o.frequency.exponentialRampToValueAtTime(320,t+d);og.gain.setValueAtTime(.0001,t);og.gain.exponentialRampToValueAtTime(.08,t+d*.9);og.gain.exponentialRampToValueAtTime(.0001,t+d+.05);const lp=AC.createBiquadFilter();lp.type="lowpass";lp.frequency.value=900;o.connect(lp);lp.connect(og);og.connect(master);o.start(t);o.stop(t+d+.1)}
+function boom(){if(!AC||!sndOn)return;const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type="sine";o.frequency.setValueAtTime(72,t);o.frequency.exponentialRampToValueAtTime(28,t+1.4);g.gain.setValueAtTime(.9,t);g.gain.exponentialRampToValueAtTime(.0001,t+1.6);o.connect(g);g.connect(master);o.start(t);o.stop(t+1.7);
+ const len=AC.sampleRate*.8,b=AC.createBuffer(1,len,AC.sampleRate),x=b.getChannelData(0);for(let i=0;i<len;i++)x[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);const s=AC.createBufferSource();s.buffer=b;const f=AC.createBiquadFilter();f.type="lowpass";f.frequency.value=600;const ng=AC.createGain();ng.gain.value=.5;s.connect(f);f.connect(ng);ng.connect(master);ng.connect(AC.space);s.start(t)}
+$("#journey").addEventListener("click",()=>{J?endJourney():startJourney()});
+/* ===== info cards ===== */
+const INFO={
+"Солнце":["Звезда · жёлтый карлик G2V",[["Диаметр","109 Земель"],["Поверхность","≈5 500 °C"],["Возраст","4,6 млрд лет"],["Масса","99,86% массы системы"]],"Солнце обходит центр Галактики со скоростью около 230 км/с. Один полный оборот занимает примерно 230 млн лет."],
+"Меркурий":["Планета земной группы",[["От Солнца","0,39 а.е."],["Диаметр","0,38 Земли"],["Год","88 дней"],["Температура","−180…+430 °C"]],"Самая быстрая планета. Атмосферы почти нет, поэтому днём поверхность раскаляется, а ночью промерзает."],
+"Венера":["Планета земной группы",[["От Солнца","0,72 а.е."],["Диаметр","0,95 Земли"],["Год","225 дней"],["Температура","≈+465 °C"]],"Самая горячая планета из-за мощного парникового эффекта. Вращается в обратную сторону, и сутки там длиннее года."],
+"Земля":["Планета земной группы",[["От Солнца","1 а.е."],["Диаметр","12 742 км"],["Год","365,25 дня"],["Средняя температура","≈+15 °C"]],"Единственная известная планета с жизнью и жидкой водой на поверхности."],
+"Марс":["Планета земной группы",[["От Солнца","1,52 а.е."],["Диаметр","0,53 Земли"],["Год","687 дней"],["Средняя температура","≈−60 °C"]],"Здесь находится Олимп, самый высокий вулкан в Солнечной системе, высотой около 22 км."],
+"Юпитер":["Газовый гигант",[["От Солнца","5,2 а.е."],["Диаметр","11,2 Земли"],["Год","11,9 лет"],["Спутники","95+"]],"Тяжелее всех остальных планет вместе взятых. Большое красное пятно — шторм крупнее Земли."],
+"Сатурн":["Газовый гигант",[["От Солнца","9,54 а.е."],["Диаметр","9,4 Земли"],["Год","29,5 лет"],["Спутники","140+"]],"Средняя плотность меньше, чем у воды. Кольца состоят в основном из водяного льда."],
+"Уран":["Ледяной гигант",[["От Солнца","19,2 а.е."],["Диаметр","4 Земли"],["Год","84 года"],["Наклон оси","98°"]],"Вращается почти лёжа на боку, поэтому полюса по 42 года освещены непрерывно."],
+"Нептун":["Ледяной гигант",[["От Солнца","30,1 а.е."],["Диаметр","3,9 Земли"],["Год","165 лет"],["Ветер","до ≈2 100 км/ч"]],"Самые сильные ветры в Солнечной системе. Его нашли сначала на бумаге, по расчётам, и только потом в телескоп."],
+"Стрелец A*":["Сверхмассивная чёрная дыра",[["Масса","≈4 млн Солнц"],["От Солнца","≈26 000 св. лет"],["Снимок","EHT, 2022"]],"Центр Млечного Пути. Её массу измерили по звёздам, которые обращаются вокруг неё за десятки лет."],
+"Альфа Центавра (A, B и Проксима)":["Тройная система",[["Расстояние","4,24–4,37 св. г."],["A","жёлтый карлик G2V"],["B","оранжевый карлик K1V"],["Проксима","красный карлик M5.5"]],"Ближайшие к нам звёзды. У Проксимы есть планета Proxima b в зоне, где вода может быть жидкой."],
+"Звезда Барнарда":["Красный карлик M4",[["Расстояние","5,96 св. г."],["Масса","0,16 Солнца"],["Возраст","≈10 млрд лет"]],"Быстрее всех звёзд смещается по небу и постепенно к нам приближается."],
+"Вольф 359":["Красный карлик M6",[["Расстояние","7,86 св. г."],["Масса","≈0,1 Солнца"],["Светимость","0,001 Солнца"]],"Одна из самых тусклых известных звёзд. Часто вспыхивает, резко усиливая блеск."],
+"Лаланд 21185":["Красный карлик M2",[["Расстояние","8,31 св. г."],["Масса","0,39 Солнца"],["Планеты","2"]],"Самый яркий красный карлик северного неба, виден в бинокль."],
+"Сириус":["Двойная звезда",[["Расстояние","8,6 св. г."],["Сириус A","A1V, 2 массы Солнца"],["Светимость","≈25 Солнц"],["Сириус B","белый карлик"]],"Самая яркая звезда ночного неба. Её спутник Сириус B размером с Землю, но массой с Солнце."],
+"Лейтен 726-8":["Пара красных карликов",[["Расстояние","8,79 св. г."],["Компоненты","BL и UV Кита"],["Тип","M5.5 + M6"]],"UV Кита — прототип вспыхивающих звёзд: за минуты она может стать в разы ярче."],
+"Росс 154":["Красный карлик M3.5",[["Расстояние","9,69 св. г."],["Масса","0,17 Солнца"]],"Молодая и активная вспыхивающая звезда в созвездии Стрельца."],
+"Эпсилон Эридана":["Оранжевый карлик K2V",[["Расстояние","10,5 св. г."],["Возраст","≈0,4–0,8 млрд лет"],["Планеты","1 гигант"]],"Молодая система с пылевыми поясами, похожая на раннюю Солнечную систему."],
+"Лакайль 9352":["Красный карлик M0.5",[["Расстояние","10,7 св. г."],["Масса","0,48 Солнца"],["Планеты","2"]],"Один из самых ярких красных карликов, видна в бинокль в южном небе."],
+"Росс 128":["Красный карлик M4",[["Расстояние","11 св. г."],["Масса","0,17 Солнца"],["Планеты","Ross 128 b"]],"Спокойная звезда без сильных вспышек. Её планета Ross 128 b по массе близка к Земле."],
+"61 Лебедя":["Пара оранжевых карликов",[["Расстояние","11,4 св. г."],["Тип","K5V + K7V"]],"Первая звезда, расстояние до которой измерили: Бессель, 1838 год."],
+"Процион":["Двойная звезда",[["Расстояние","11,46 св. г."],["Процион A","F5, субгигант"],["Процион B","белый карлик"]],"Одна из вершин Зимнего треугольника вместе с Сириусом и Бетельгейзе."],
+"Эпсилон Индейца":["Оранжевый карлик K5V",[["Расстояние","11,9 св. г."],["Спутники","2 коричневых карлика"],["Планеты","1 гигант"]],"Вокруг неё обращаются планета-гигант и пара коричневых карликов."],
+"Тау Кита":["Жёлтый карлик G8V",[["Расстояние","11,9 св. г."],["Масса","0,78 Солнца"],["Возраст","≈6–10 млрд лет"]],"Ближайшая одиночная звезда, похожая на Солнце. Частый адрес в научной фантастике."]};
+
+Object.assign(INFO,{
+"Туманность Андромеды":["Спиральная галактика",[["Расстояние","2,5 млн св. лет"],["Диаметр","≈150–220 тыс. св. лет"],["Звёзд","≈1 трлн"]],"Самая далёкая вещь, видимая невооружённым глазом. Летит к нам на ≈110 км/с; через 4–5 млрд лет сольётся с Млечным Путём."],
+"Галактика Треугольника":["Спиральная галактика",[["Расстояние","2,7 млн св. лет"],["Диаметр","≈60 тыс. св. лет"],["Звёзд","≈40 млрд"]],"Третья по величине в Местной группе. Вероятно, спутник Андромеды."],
+"M32":["Карликовая эллиптическая",[["Расстояние","2,5 млн св. лет"],["Диаметр","≈6,5 тыс. св. лет"]],"Компактный спутник Андромеды. Возможно, остаток ядра галактики, которую Андромеда ободрала."],
+"M110":["Карликовая эллиптическая",[["Расстояние","2,7 млн св. лет"],["Диаметр","≈17 тыс. св. лет"]],"Ещё один спутник Андромеды, в нём есть следы недавнего звездообразования."],
+"Большое Магелланово Облако":["Неправильная галактика",[["Расстояние","≈160 тыс. св. лет"],["Диаметр","≈32 тыс. св. лет"],["Звёзд","≈30 млрд"]],"Крупнейший спутник Млечного Пути, видна с юга как светлое облачко. Здесь в 1987 году вспыхнула сверхновая SN 1987A."],
+"Малое Магелланово Облако":["Карликовая неправильная",[["Расстояние","≈200 тыс. св. лет"],["Диаметр","≈19 тыс. св. лет"]],"Связана с Большим Облаком газовым мостом. Обе галактики, возможно, впервые пролетают мимо нас."],
+"NGC 6822":["Карликовая неправильная",[["Расстояние","≈1,6 млн св. лет"],["Диаметр","≈7 тыс. св. лет"]],"«Галактика Барнарда». Похожа на Магеллановы Облака, но живёт сама по себе."],
+"IC 1613":["Карликовая неправильная",[["Расстояние","≈2,4 млн св. лет"],["Диаметр","≈10 тыс. св. лет"]],"Почти без пыли, поэтому служит эталоном для измерения расстояний."],
+"Карлик в Стрельце":["Карликовая сфероидальная",[["Расстояние","≈70 тыс. св. лет"],["Диаметр","≈10 тыс. св. лет"]],"Прямо сейчас разрывается приливными силами Млечного Пути, её звёзды вытянуты в поток вокруг нашей Галактики."],
+"Лев I":["Карликовая сфероидальная",[["Расстояние","≈820 тыс. св. лет"],["Диаметр","≈2 тыс. св. лет"]],"Один из самых далёких спутников Млечного Пути. Видна рядом с яркой звездой Регул."],
+"Карлик в Печи":["Карликовая сфероидальная",[["Расстояние","≈460 тыс. св. лет"],["Диаметр","≈6 тыс. св. лет"],["Шаровые скопления","6"]],"Необычно много шаровых скоплений для такой маленькой галактики."],
+"WLM":["Карликовая неправильная",[["Расстояние","≈3 млн св. лет"],["Диаметр","≈8 тыс. св. лет"]],"Одинокая галактика на окраине Местной группы, почти не тронутая соседями."],
+"Скопление Девы":["Скопление галактик",[["Расстояние","≈54 млн св. лет"],["Галактик","≈1 300–2 000"],["Центр","галактика M87"]],"Ядро нашего местного сверхскопления. В M87 сфотографировали первую чёрную дыру (EHT, 2019)."],
+"Скопление Печи":["Скопление галактик",[["Расстояние","≈62 млн св. лет"],["Галактик","≈60"]],"Второе по богатству скопление в пределах 100 млн св. лет."],
+"Скопление Центавра":["Скопление галактик",[["Расстояние","≈170 млн св. лет"],["Галактик","сотни"]],"Лежит на пути потока галактик к Великому аттрактору."],
+"Скопление Гидры":["Скопление галактик",[["Расстояние","≈160 млн св. лет"],["Галактик","≈150+"]],"Одно из крупнейших скоплений рядом с нами, часть сверхскопления Гидры–Центавра."],
+"Великий аттрактор":["Гравитационная аномалия",[["Расстояние","≈150–250 млн св. лет"],["Масса","≈10¹⁶ Солнц"],["Центр","скопление Наугольника"]],"Область, к которой стекаются галактики Ланиакеи, включая нашу. Спрятана за диском Млечного Пути, поэтому изучена плохо."],
+"Скопление Павлина–Индейца":["Скопления галактик",[["Расстояние","≈200 млн св. лет"]],"Ещё один крупный узел на периферии Ланиакеи."],
+"Скопление Волос Вероники":["Скопление галактик",[["Расстояние","≈320 млн св. лет"],["Галактик","1 000+"]],"Уже за границей Ланиакеи. По движению его галактик Цвикки в 1933 году впервые заподозрил тёмную материю."]});
+Object.assign(INFO,{"Ланиакея":["Сверхскопление · бассейн притяжения",[["Поперечник","≈520 млн св. лет"],["Галактик","≈100 000"],["Масса","≈10¹⁷ Солнц"],["Центр","Великий аттрактор"]],"Наш «водосбор»: все галактики внутри текут к Великому аттрактору. Название по-гавайски значит «необъятные небеса»."],
+"Сверхскопление Шепли":["Бассейн притяжения",[["Расстояние","≈650 млн св. лет"],["Масса","≈10¹⁶–10¹⁷ Солнц"]],"Самая массивная структура в окрестностях. Ланиакея вместе с Великим аттрактором медленно дрейфует в его сторону."],
+"Персей–Рыбы":["Бассейн притяжения",[["Расстояние","≈250 млн св. лет"],["Протяжённость","≈300 млн св. лет"]],"Длинная цепь скоплений на противоположной от Великого аттрактора стороне неба. Между ней и нами лежит Местная пустота."],
+"Сверхскопление Волос Вероники":["Бассейн притяжения",[["Расстояние","≈320 млн св. лет"],["Ядро","скопления Волос Вероники и Льва"]],"Сосед Ланиакеи через водораздел: его галактики текут к своему центру, а не к Великому аттрактору."],
+"Сверхскопление Геркулеса":["Бассейн притяжения",[["Расстояние","≈500 млн св. лет"]],"Группа богатых скоплений в северном небе. Входит в Великую стену CfA2, одну из крупнейших известных структур."],"Реликтовое излучение":["Самый древний свет",[["Возраст","≈380 тыс. лет после Большого взрыва"],["Температура","2,725 K"],["Расстояние сейчас","≈46,5 млрд св. лет"]],"Свет, оставшийся с момента, когда Вселенная впервые стала прозрачной. Пятна на карте — разница температур в стотысячные доли градуса; из таких зародышей выросла вся космическая паутина."],
+"Наблюдаемая Вселенная":["Всё, что в принципе можно увидеть",[["Радиус","≈46,5 млрд св. лет"],["Возраст","≈13,8 млрд лет"],["Галактик","≈2 трлн (оценка)"]],"Радиус больше возраста, умноженного на скорость света, потому что пространство расширялось, пока свет летел к нам. Центр — там, где наблюдатель: каждый видит себя в середине своей сферы."]});
+INFO["Великий аттрактор"][2]+=" Всё это вместе с нами — сверхскопление Ланиакея, ≈520 млн св. лет в поперечнике, ≈100 000 галактик.";
+function pickAt(x,y){let best=null,bd=1e9;PICK.forEach(o=>{const d=Math.hypot(o.x-x,o.y-y);if(d<o.r&&d<bd){bd=d;best=o}});return best}
+function openInfo(id){const d=INFO[id];if(!d)return;selId=id;$("#iKind").textContent=d[0];$("#iName").textContent=id;
+ const dl=$("#iFacts");dl.textContent="";d[1].forEach(([k,v])=>{const dt=document.createElement("dt"),dd=document.createElement("dd");dt.textContent=k;dd.textContent=v;dl.append(dt,dd)});
+ $("#iText").textContent=d[2];$("#info").classList.add("open")}
+function closeInfo(){selId=null;$("#info").classList.remove("open")}
+$("#infoX").addEventListener("click",closeInfo);
+addEventListener("keydown",e=>{if(e.key==="Escape"){closeInfo();endJourney()}});
+addEventListener("resize",resize);resize();
+/* warm start: a few years already flown so the spirals are visible on first frame */
+for(let i=0;i<=600;i++){simT=i*.01;sampleTrails()}
+requestAnimationFrame(frame);
+</script>
+
+</body>
+</html>
