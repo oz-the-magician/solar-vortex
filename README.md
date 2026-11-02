@@ -22,13 +22,14 @@ A single-page canvas experience: the Sun flies through the Galaxy at ~230 km/s w
 - **Drag** — orbit the camera, **wheel / pinch** — zoom across all levels
 - **Click** any planet, star, galaxy or cluster — info card
 - **▶ Journey** — a ~45 s guided zoom-out to the edge of the universe and a 2 s hyperjump back
+- **Date** — planets move to their real positions for any day; **Today** resets it
 - Toggles: real distances, flight through the galaxy, trails, orbits, names, flows, glow, sound
 - **Languages:** English, Czech and Russian — picked from the browser language, switchable with RU / EN / CS
 
 ## What is real and what is modelled
 
-- **Real:** planet distances and periods, the Sun's speed and 60° tilt, positions of the nearest stars, distances to Local Group galaxies, clusters and attractors, size of the observable universe.
-- **Modelled:** shape of the Milky Way's arms, filament shapes, Laniakea flow lines (in the spirit of Tully et al. 2014), the cosmic web and its basins, the CMB pattern (Planck-style noise). Object sizes are exaggerated so they stay visible; the scene's orientation relative to the sky is arbitrary.
+- **Real:** planet distances, periods and positions on any date (1800–2200), the Sun's speed and the 60° tilt between the ecliptic and the galactic plane, positions of the nearest stars, directions and distances to Local Group galaxies, clusters and attractors, size of the observable universe. The scene is oriented to the real sky: the Sun flies toward Cygnus, the Galactic centre lies in Sagittarius.
+- **Modelled:** shape of the Milky Way's arms, filament shapes, Laniakea flow lines (in the spirit of Tully et al. 2014), the cosmic web and its basins, the CMB pattern (Planck-style noise). Object sizes are exaggerated so they stay visible.
 
 ## Credits
 
@@ -52,6 +53,6 @@ MIT — see [LICENSE](LICENSE).
 
 **Управление:** перетаскивание вращает камеру, колесо или щипок — масштаб, клик по объекту открывает карточку с фактами. Кнопка «▶ Путешествие» запускает 45-секундный отлёт к краю Вселенной и двухсекундный гиперпрыжок обратно.
 
-**Что реально, а что модель:** расстояния, периоды, позиции ближайших звёзд, галактик и скоплений — по каталогам. Форма рукавов, нитей, потоков Ланиакеи, космической паутины и узор реликтового излучения — модель. Размеры объектов увеличены, чтобы их было видно.
+**Что реально, а что модель:** расстояния, периоды и положение планет на любую дату (1800–2200), позиции ближайших звёзд, направления и расстояния до галактик и скоплений — по каталогам; сцена повёрнута по настоящему небу: Солнце летит к Лебедю, центр Галактики — в Стрельце. Форма рукавов, нитей, потоков Ланиакеи, космической паутины и узор реликтового излучения — модель. Размеры объектов увеличены, чтобы их было видно.
 
 **Благодарности:** солнце взято из Skill Synapse ([claude-skill-index](https://github.com/oz-the-magician/claude-skill-index)); карта Ланиакеи — Талли и др., *Nature*, 2014.
